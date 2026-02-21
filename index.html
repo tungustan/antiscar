@@ -42,6 +42,7 @@ video{
   align-items:center;
   font-size:70px;
   z-index:5;
+  cursor:pointer;
 }
 
 /* 상단 */
@@ -107,9 +108,8 @@ input[type=range]::-webkit-slider-thumb{
   cursor:pointer;
 }
 
-/* 터치 효과 */
 .btn:active{
-  transform:scale(0.88);
+  transform:scale(0.9);
   background:rgba(255,255,255,0.18);
 }
 
@@ -118,28 +118,36 @@ input[type=range]::-webkit-slider-thumb{
   content:"";
   position:absolute;
   left:26px;
-  top:19px;
+  top:20px;
   border-left:16px solid white;
   border-top:10px solid transparent;
   border-bottom:10px solid transparent;
 }
 
-/* ❚❚ 일시정지 (균형 수정) */
-.play.paused::before,
-.play.paused::after{
+/* ❚❚ 일시정지 (완전 수정) */
+.play.paused::before{
   content:"";
   position:absolute;
-  top:20px;
+  left:20px;
+  top:18px;
   width:6px;
-  height:20px;
+  height:24px;
   background:white;
   border-radius:2px;
 }
 
-.play.paused::before{ left:22px; }
-.play.paused::after{ right:22px; }
+.play.paused::after{
+  content:"";
+  position:absolute;
+  right:20px;
+  top:18px;
+  width:6px;
+  height:24px;
+  background:white;
+  border-radius:2px;
+}
 
-/* ⏮ 이전 (왼쪽) */
+/* 이전 */
 .prev::before,
 .prev::after{
   content:"";
@@ -159,7 +167,7 @@ input[type=range]::-webkit-slider-thumb{
   border-right:14px solid white;
 }
 
-/* ⏭ 다음 (오른쪽) */
+/* 다음 */
 .next::before,
 .next::after{
   content:"";
@@ -239,6 +247,7 @@ function updateIndex(){
   videoIndexText.textContent=(currentIndex+1)+" / "+videos.length;
 }
 
+/* 재생 제어 */
 function play(){ player.play(); }
 function pause(){ player.pause(); }
 
@@ -249,6 +258,9 @@ function updatePlayIcon(){
     playBtn.classList.add("paused");
   }
 }
+
+player.addEventListener("play",updatePlayIcon);
+player.addEventListener("pause",updatePlayIcon);
 
 /* 이전 */
 document.getElementById("prevBtn").addEventListener("click",(e)=>{
@@ -268,14 +280,11 @@ document.getElementById("nextBtn").addEventListener("click",(e)=>{
   }
 });
 
-/* 재생 */
+/* 재생 버튼 */
 playBtn.addEventListener("click",(e)=>{
   e.stopPropagation();
   player.paused ? play() : pause();
 });
-
-player.addEventListener("play",updatePlayIcon);
-player.addEventListener("pause",updatePlayIcon);
 
 /* 자동 다음 */
 player.addEventListener("ended",()=>{
@@ -303,7 +312,6 @@ progress.addEventListener("input",(e)=>{
 function showControls(){
   controls.classList.remove("hidden");
   clearTimeout(hideTimeout);
-
   if(!player.paused){
     hideTimeout=setTimeout(()=>{
       controls.classList.add("hidden");
@@ -320,15 +328,12 @@ document.getElementById("container").addEventListener("click",()=>{
   player.paused ? play() : pause();
 });
 
-/* 첫 시작 */
+/* 시작 버튼 */
 startScreen.addEventListener("click",()=>{
   started=true;
   startScreen.style.display="none";
+  loadVideo(currentIndex);
   play();
-
-  if(document.fullscreenElement==null){
-    document.documentElement.requestFullscreen().catch(()=>{});
-  }
 });
 
 /* 초기 */
