@@ -2,39 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Mobile Video Player</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video Player</title>
 
 <style>
-html,body{
+body{
   margin:0;
-  padding:0;
   background:black;
-  height:100%;
   overflow:hidden;
   font-family:Arial;
 }
 
-#loginBox{
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  text-align:center;
-  color:white;
-  width:90%;
-}
-
-input,button{
-  padding:14px;
-  font-size:18px;
-  width:80%;
-  max-width:320px;
-  margin-top:10px;
-}
-
-#videoSection{
-  display:none;
+#videoContainer{
+  position:relative;
   width:100vw;
   height:100vh;
 }
@@ -45,70 +25,107 @@ video{
   object-fit:contain;
   background:black;
 }
+
+#startOverlay{
+  position:absolute;
+  width:100%;
+  height:100%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:black;
+  color:white;
+  font-size:22px;
+  z-index:20;
+  cursor:pointer;
+}
+
+.controls{
+  position:absolute;
+  bottom:25px;
+  width:100%;
+  text-align:center;
+}
+
+button{
+  padding:12px 18px;
+  margin:6px;
+  font-size:16px;
+}
 </style>
 </head>
 <body>
 
-<div id="loginBox">
-  <h2>Enter Password</h2>
-  <input type="password" id="pw" placeholder="Password">
-  <br>
-  <button onclick="checkPassword()">Enter</button>
-  <p id="error" style="color:red;"></p>
-</div>
+<div id="videoContainer">
 
-<div id="videoSection">
-  <video id="player" controls playsinline></video>
+  <div id="startOverlay" onclick="startPlayer()">
+    Tap to Start
+  </div>
+
+  <video id="player" playsinline controls></video>
+
+  <div class="controls">
+    <button onclick="prevVideo()">⏮ Prev</button>
+    <button onclick="togglePlay()">▶ / ⏸</button>
+    <button onclick="nextVideo()">Next ⏭</button>
+  </div>
+
 </div>
 
 <script>
-const correctPassword = "12345";
 const pullZoneUrl = "https://vz-af7f48b7-cd1.b-cdn.net";
 
-/* 🔥 여기만 수정하면 됨 (Bunny 대시보드에서 GUID 복사) */
 const videos = [
   "b5f37dc2-c84b-4ada-8f63-784c3962fd22",
-  "e95789df-e709-434e-be8c-fdd6969ef422", 
+  "e95789df-e709-434e-be8c-fdd6969ef422",
   "4dfa8dfd-8fb0-4221-b365-fa1d1ca91eb4"
 ];
 
 let currentIndex = 0;
 const player = document.getElementById("player");
+const overlay = document.getElementById("startOverlay");
 
-function checkPassword(){
-  if(document.getElementById("pw").value === correctPassword){
-    document.getElementById("loginBox").style.display="none";
-    document.getElementById("videoSection").style.display="block";
-    startPlayback();
-  } else {
-    document.getElementById("error").innerText="Incorrect password";
-  }
+function startPlayer(){
+  overlay.style.display="none";
+  enterFullscreen();
+  playVideo(0);
 }
 
-function enterFullscreen(el){
+function enterFullscreen(){
+  const el = document.documentElement;
   if(el.requestFullscreen) el.requestFullscreen();
   else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
 }
 
-function startPlayback(){
-  enterFullscreen(document.documentElement);
-  playVideo(0);
-}
-
-function playVideo(i){
-  currentIndex = i;
-  player.src = `${pullZoneUrl}/${videos[i]}/play_720p.mp4`;
+function playVideo(index){
+  currentIndex = index;
+  player.src = `${pullZoneUrl}/${videos[currentIndex]}/play_720p.mp4`;
   player.play().catch(()=>{});
 }
 
-player.addEventListener("ended",()=>{
-  if(currentIndex + 1 < videos.length){
-    playVideo(currentIndex + 1);
-  }
-});
+function togglePlay(){
+  if(player.paused) player.play();
+  else player.pause();
+}
 
-document.getElementById("pw").addEventListener("keypress",(e)=>{
-  if(e.key==="Enter") checkPassword();
+function nextVideo(){
+  currentIndex++;
+  if(currentIndex >= videos.length){
+    currentIndex = 0;
+  }
+  playVideo(currentIndex);
+}
+
+function prevVideo(){
+  currentIndex--;
+  if(currentIndex < 0){
+    currentIndex = videos.length - 1;
+  }
+  playVideo(currentIndex);
+}
+
+player.addEventListener("ended",()=>{
+  nextVideo();
 });
 </script>
 
