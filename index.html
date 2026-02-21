@@ -1,148 +1,121 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>Mobile Bunny Player</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Mobile Bunny Auto Playlist</title>
 
-    <script src="https://iframe.mediadelivery.net/playerv2.js"></script>
+<script src="https://iframe.mediadelivery.net/player.js"></script>
 
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            background: black;
-            height: 100%;
-            overflow: hidden;
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
-        }
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  background: black;
+  height: 100%;
+  overflow: hidden;
+}
 
-        #loginBox {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            text-align: center;
-        }
+#loginBox {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  text-align: center;
+}
 
-        input {
-            padding: 12px;
-            font-size: 18px;
-            width: 200px;
-        }
+#playerSection {
+  display: none;
+  width: 100vw;
+  height: 100vh;
+}
 
-        button {
-            padding: 12px 20px;
-            font-size: 18px;
-            margin-top: 10px;
-            cursor: pointer;
-        }
-
-        #playerSection {
-            display: none;
-            width: 100vw;
-            height: 100vh;
-        }
-
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-    </style>
+#player {
+  width: 100%;
+  height: 100%;
+}
+</style>
 </head>
 <body>
 
 <div id="loginBox">
-    <h2 style="color:white;">비밀번호 입력</h2>
-    <input type="password" id="pw" />
-    <br>
-    <button onclick="checkPassword()">접속</button>
-    <p id="error" style="color:red;"></p>
+  <h2>비밀번호 입력</h2>
+  <input type="password" id="pw">
+  <br>
+  <button onclick="checkPassword()">접속</button>
+  <p id="error" style="color:red;"></p>
 </div>
 
 <div id="playerSection">
-    <iframe id="bunnyPlayer"
-            allow="autoplay; fullscreen"
-            allowfullscreen>
-    </iframe>
+  <div id="player"></div>
 </div>
 
 <script>
-    const correctPassword = "12345";
-    const libraryId = "603895";
-    const apiKey = "76261b03-34c8-4124-a50b3e6ef178-3abd-41f8";
-    const embedBase = `https://iframe.mediadelivery.net/embed/${libraryId}/`;
+const correctPassword = "12345";
 
-    let videos = [];
-    let currentIndex = 0;
-    let player = null; // Bunny SDK 플레이어 객체 저장용
+const libraryId = 603895;
+const apiKey = "76261b03-34c8-4124-a50b3e6ef178-3abd-41f8";
 
-    function checkPassword(){
-        if(document.getElementById("pw").value === correctPassword){
-            document.getElementById("loginBox").style.display="none";
-            document.getElementById("playerSection").style.display="block";
-            loadVideos();
-        } else {
-            document.getElementById("error").innerText="비밀번호 틀림";
-        }
+let videos = [];
+let currentIndex = 0;
+let playerInstance;
+
+function checkPassword(){
+  if(document.getElementById("pw").value === correctPassword){
+    document.getElementById("loginBox").style.display="none";
+    document.getElementById("playerSection").style.display="block";
+    loadVideos();
+  } else {
+    document.getElementById("error").innerText="비밀번호 틀림";
+  }
+}
+
+async function loadVideos(){
+  try{
+    const res = await fetch(`https://video.bunnycdn.com/library/${libraryId}/videos?page=1&itemsPerPage=100`,{
+      headers:{ "AccessKey": apiKey }
+    });
+
+    const data = await res.json();
+    videos = data.items || [];
+
+    videos.sort((a,b)=>(a.title||"").localeCompare(b.title||"",'ko'));
+
+    if(videos.length){
+      initPlayer(videos[0].guid);
+    } else {
+      alert("영상이 없습니다.");
     }
 
-    async function loadVideos(){
-        try {
-            const res = await fetch(`https://video.bunnycdn.com/library/${libraryId}/videos?page=1&itemsPerPage=100`, {
-                headers: { "AccessKey": apiKey }
-            });
+  }catch(e){
+    alert("API 오류 (CORS 또는 키 문제)");
+    console.error(e);
+  }
+}
 
-            const data = await res.json();
-            videos = data.items || [];
+function initPlayer(videoId){
 
-            // 제목 기준 정렬 (가나다순)
-            videos.sort((a,b) => (a.title || "").localeCompare(b.title || "", 'ko'));
+  playerInstance = new playerjs.Player('player', {
+    file: videoId,
+    library: libraryId,
+    autoplay: true,
+    muted: false,
+    captions: false,
+    chromecast: false
+  });
 
-            if(videos.length > 0){
-                playVideo(0);
-            } else {
-                alert("영상이 없습니다.");
-            }
-        } catch(e) {
-            alert("API 오류 (CORS 또는 키 문제)");
-            console.error(e);
-        }
-    }
+  playerInstance.on('ended', function(){
+    nextVideo();
+  });
+}
 
-    function playVideo(index){
-        currentIndex = index;
-        const videoId = videos[index].guid;
-
-        // 임베드 URL 생성 (자동재생, 인라인재생 필수)
-        const url = `${embedBase}${videoId}?autoplay=true&muted=false&playsinline=true&captions=false`;
-
-        const iframe = document.getElementById("bunnyPlayer");
-        iframe.src = url;
-
-        // 중요: Bunny Stream SDK를 사용하여 영상 종료(ended) 감지
-        // 플레이어 객체가 없으면 생성하고, 있으면 이벤트를 다시 연결합니다.
-        if (!player) {
-            player = new BunnyStreamPlayer("bunnyPlayer");
-        }
-
-        // 기존 이벤트 리스너가 중복되지 않도록 처리하고 'ended' 이벤트 등록
-        player.on("ended", () => {
-            console.log("현재 영상 종료. 다음 영상으로 이동합니다.");
-            autoNext();
-        });
-    }
-
-    function autoNext(){
-        if(currentIndex + 1 < videos.length){
-            playVideo(currentIndex + 1);
-        } else {
-            alert("마지막 영상입니다.");
-        }
-    }
+function nextVideo(){
+  if(currentIndex + 1 < videos.length){
+    currentIndex++;
+    playerInstance.load(videos[currentIndex].guid);
+  }
+}
 </script>
 
 </body>
