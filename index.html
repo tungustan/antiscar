@@ -117,66 +117,66 @@ input[type=range]::-webkit-slider-thumb{
 .play::before{
   content:"";
   position:absolute;
-  left:24px;
-  top:18px;
-  border-left:18px solid white;
-  border-top:12px solid transparent;
-  border-bottom:12px solid transparent;
+  left:26px;
+  top:19px;
+  border-left:16px solid white;
+  border-top:10px solid transparent;
+  border-bottom:10px solid transparent;
 }
 
-/* ❚❚ 일시정지 */
+/* ❚❚ 일시정지 (균형 수정) */
 .play.paused::before,
 .play.paused::after{
   content:"";
   position:absolute;
-  top:18px;
-  width:5px;
-  height:24px;
+  top:20px;
+  width:6px;
+  height:20px;
   background:white;
   border-radius:2px;
 }
 
-.play.paused::before{ left:20px; }
-.play.paused::after{ right:20px; }
+.play.paused::before{ left:22px; }
+.play.paused::after{ right:22px; }
 
-/* ⏮ 이전 */
+/* ⏮ 이전 (왼쪽) */
 .prev::before,
 .prev::after{
   content:"";
   position:absolute;
-  top:18px;
-  border-top:12px solid transparent;
-  border-bottom:12px solid transparent;
+  top:20px;
+  border-top:10px solid transparent;
+  border-bottom:10px solid transparent;
 }
 
 .prev::before{
   left:18px;
-  border-left:16px solid white;
+  border-right:14px solid white;
 }
 
 .prev::after{
   left:30px;
-  border-left:16px solid white;
+  border-right:14px solid white;
 }
 
-/* ⏭ 다음 */
+/* ⏭ 다음 (오른쪽) */
 .next::before,
 .next::after{
   content:"";
   position:absolute;
-  top:18px;
-  border-top:12px solid transparent;
-  border-bottom:12px solid transparent;
+  top:20px;
+  border-top:10px solid transparent;
+  border-bottom:10px solid transparent;
 }
 
 .next::before{
   right:30px;
-  border-right:16px solid white;
+  border-left:14px solid white;
 }
 
 .next::after{
   right:18px;
-  border-right:16px solid white;
+  border-left:14px solid white;
 }
 </style>
 </head>
@@ -239,11 +239,9 @@ function updateIndex(){
   videoIndexText.textContent=(currentIndex+1)+" / "+videos.length;
 }
 
-/* 재생 */
 function play(){ player.play(); }
 function pause(){ player.pause(); }
 
-/* 아이콘 상태 */
 function updatePlayIcon(){
   if(player.paused){
     playBtn.classList.remove("paused");
@@ -270,7 +268,7 @@ document.getElementById("nextBtn").addEventListener("click",(e)=>{
   }
 });
 
-/* 재생 버튼 */
+/* 재생 */
 playBtn.addEventListener("click",(e)=>{
   e.stopPropagation();
   player.paused ? play() : pause();
