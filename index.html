@@ -1,141 +1,148 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Mobile Bunny Player</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Mobile Bunny Player</title>
 
-<style>
-html, body {
-  margin: 0;
-  padding: 0;
-  background: black;
-  height: 100%;
-  overflow: hidden;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
+    <script src="https://iframe.mediadelivery.net/playerv2.js"></script>
 
-#loginBox {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: white;
-  text-align: center;
-}
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: black;
+            height: 100%;
+            overflow: hidden;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-input {
-  padding: 12px;
-  font-size: 18px;
-  width: 200px;
-}
+        #loginBox {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            text-align: center;
+        }
 
-button {
-  padding: 12px 20px;
-  font-size: 18px;
-  margin-top: 10px;
-}
+        input {
+            padding: 12px;
+            font-size: 18px;
+            width: 200px;
+        }
 
-#playerSection {
-  display: none;
-  width: 100vw;
-  height: 100vh;
-}
+        button {
+            padding: 12px 20px;
+            font-size: 18px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
 
-iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-}
-</style>
+        #playerSection {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
 </head>
 <body>
 
 <div id="loginBox">
-  <h2 style="color:white;">비밀번호 입력</h2>
-  <input type="password" id="pw" />
-  <br>
-  <button onclick="checkPassword()">접속</button>
-  <p id="error" style="color:red;"></p>
+    <h2 style="color:white;">비밀번호 입력</h2>
+    <input type="password" id="pw" />
+    <br>
+    <button onclick="checkPassword()">접속</button>
+    <p id="error" style="color:red;"></p>
 </div>
 
 <div id="playerSection">
-  <iframe id="bunnyPlayer"
-    allow="autoplay; fullscreen"
-    allowfullscreen>
-  </iframe>
+    <iframe id="bunnyPlayer"
+            allow="autoplay; fullscreen"
+            allowfullscreen>
+    </iframe>
 </div>
 
 <script>
-const correctPassword = "12345";
+    const correctPassword = "12345";
+    const libraryId = "603895";
+    const apiKey = "76261b03-34c8-4124-a50b3e6ef178-3abd-41f8";
+    const embedBase = `https://iframe.mediadelivery.net/embed/${libraryId}/`;
 
-const libraryId = "603895";
-const apiKey = "76261b03-34c8-4124-a50b3e6ef178-3abd-41f8";
-const embedBase = "https://iframe.mediadelivery.net/embed/603895/";
+    let videos = [];
+    let currentIndex = 0;
+    let player = null; // Bunny SDK 플레이어 객체 저장용
 
-let videos = [];
-let currentIndex = 0;
-
-function checkPassword(){
-  if(document.getElementById("pw").value === correctPassword){
-    document.getElementById("loginBox").style.display="none";
-    document.getElementById("playerSection").style.display="block";
-    loadVideos();
-  } else {
-    document.getElementById("error").innerText="비밀번호 틀림";
-  }
-}
-
-async function loadVideos(){
-  try{
-    const res = await fetch(`https://video.bunnycdn.com/library/${libraryId}/videos?page=1&itemsPerPage=100`,{
-      headers:{ "AccessKey": apiKey }
-    });
-
-    const data = await res.json();
-    videos = data.items || [];
-
-    videos.sort((a,b)=>(a.title||"").localeCompare(b.title||"",'ko'));
-
-    if(videos.length){
-      playVideo(0);
-    } else {
-      alert("영상이 없습니다.");
+    function checkPassword(){
+        if(document.getElementById("pw").value === correctPassword){
+            document.getElementById("loginBox").style.display="none";
+            document.getElementById("playerSection").style.display="block";
+            loadVideos();
+        } else {
+            document.getElementById("error").innerText="비밀번호 틀림";
+        }
     }
 
-  }catch(e){
-    alert("API 오류 (CORS 또는 키 문제)");
-    console.error(e);
-  }
-}
+    async function loadVideos(){
+        try {
+            const res = await fetch(`https://video.bunnycdn.com/library/${libraryId}/videos?page=1&itemsPerPage=100`, {
+                headers: { "AccessKey": apiKey }
+            });
 
-function playVideo(index){
-  currentIndex = index;
+            const data = await res.json();
+            videos = data.items || [];
 
-  const videoId = videos[index].guid;
+            // 제목 기준 정렬 (가나다순)
+            videos.sort((a,b) => (a.title || "").localeCompare(b.title || "", 'ko'));
 
-  const url =
-    `${embedBase}${videoId}` +
-    `?autoplay=true` +
-    `&muted=false` +
-    `&playsinline=true` +
-    `&captions=false` +     // 자막 버튼 숨김
-    `&chromecast=false`;    // 캐스트 버튼 숨김
+            if(videos.length > 0){
+                playVideo(0);
+            } else {
+                alert("영상이 없습니다.");
+            }
+        } catch(e) {
+            alert("API 오류 (CORS 또는 키 문제)");
+            console.error(e);
+        }
+    }
 
-  document.getElementById("bunnyPlayer").src = url;
-}
+    function playVideo(index){
+        currentIndex = index;
+        const videoId = videos[index].guid;
 
-/* 다음 영상 자동 전환 (모바일용 타이머 방식) */
-async function autoNext(){
-  if(currentIndex + 1 < videos.length){
-    playVideo(currentIndex + 1);
-  }
-}
+        // 임베드 URL 생성 (자동재생, 인라인재생 필수)
+        const url = `${embedBase}${videoId}?autoplay=true&muted=false&playsinline=true&captions=false`;
 
-// Bunny iframe ended 직접 감지 불가 → 간단한 대기 후 전환 방식 필요
-// 실제 정확 감지는 Bunny Player JS SDK 필요
+        const iframe = document.getElementById("bunnyPlayer");
+        iframe.src = url;
 
+        // 중요: Bunny Stream SDK를 사용하여 영상 종료(ended) 감지
+        // 플레이어 객체가 없으면 생성하고, 있으면 이벤트를 다시 연결합니다.
+        if (!player) {
+            player = new BunnyStreamPlayer("bunnyPlayer");
+        }
+
+        // 기존 이벤트 리스너가 중복되지 않도록 처리하고 'ended' 이벤트 등록
+        player.on("ended", () => {
+            console.log("현재 영상 종료. 다음 영상으로 이동합니다.");
+            autoNext();
+        });
+    }
+
+    function autoNext(){
+        if(currentIndex + 1 < videos.length){
+            playVideo(currentIndex + 1);
+        } else {
+            alert("마지막 영상입니다.");
+        }
+    }
 </script>
 
 </body>
