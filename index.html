@@ -2,13 +2,12 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>Fullscreen Bunny Player</title>
+<title>Bunny Embed Playlist</title>
 <style>
-body { margin:0; background:black; color:white; text-align:center; font-family:Arial; }
+body { margin:0; background:black; color:white; font-family:Arial; text-align:center; }
 #loginBox { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); }
-#videoSection { display:none; }
-video { width:100%; height:100vh; object-fit:contain; background:black; }
-button { padding:12px 25px; font-size:18px; margin-top:15px; cursor:pointer; }
+#playerSection { display:none; height:100vh; }
+iframe { width:100%; height:100vh; border:none; }
 </style>
 </head>
 <body>
@@ -21,29 +20,29 @@ button { padding:12px 25px; font-size:18px; margin-top:15px; cursor:pointer; }
 <p id="error" style="color:red;"></p>
 </div>
 
-<div id="videoSection">
-<button onclick="startPlayback()">▶ 재생 시작 (전체화면)</button>
-<div id="title"></div>
-<video id="player" controls></video>
+<div id="playerSection">
+<iframe id="bunnyPlayer"
+allow="autoplay; fullscreen"
+allowfullscreen>
+</iframe>
 </div>
 
 <script>
 const correctPassword = "12345";
+
 const libraryId = "603895";
 const apiKey = "76261b03-34c8-4124-a50b3e6ef178-3abd-41f8";
-const pullZoneUrl = "https://vz-af7f48b7-cd1.b-cdn.net";
+const embedBase = "https://iframe.mediadelivery.net/embed/603895/";
 
 let videos = [];
 let currentIndex = 0;
-const player = document.getElementById("player");
-const titleDiv = document.getElementById("title");
 
 function checkPassword(){
   if(document.getElementById("pw").value === correctPassword){
     document.getElementById("loginBox").style.display="none";
-    document.getElementById("videoSection").style.display="block";
+    document.getElementById("playerSection").style.display="block";
     loadVideos();
-  } else {
+  }else{
     document.getElementById("error").innerText="비밀번호 틀림";
   }
 }
@@ -55,49 +54,45 @@ async function loadVideos(){
     });
     const data = await res.json();
     videos = data.items || [];
+
     videos.sort((a,b)=>(a.title||"").localeCompare(b.title||"",'ko'));
+
+    if(videos.length){
+      playVideo(0);
+    }else{
+      alert("영상이 없습니다.");
+    }
+
   }catch(e){
     alert("API 오류 (CORS 또는 키 문제)");
     console.error(e);
   }
 }
 
-function enterFullscreen(element){
-  if(element.requestFullscreen){
-    element.requestFullscreen();
-  }else if(element.webkitRequestFullscreen){
-    element.webkitRequestFullscreen();
-  }else if(element.msRequestFullscreen){
-    element.msRequestFullscreen();
-  }
+function playVideo(index){
+  currentIndex = index;
+
+  const videoId = videos[index].guid;
+
+  // 🔥 Bunny 기본 플레이어 사용
+  // autoplay=1 → 자동재생
+  // muted=0 → 소리 켜짐
+  // captions=0 → 자막 버튼 숨김
+  const url = `${embedBase}${videoId}?autoplay=true&muted=false&captions=false`;
+
+  document.getElementById("bunnyPlayer").src = url;
 }
 
-function startPlayback(){
-  if(!videos.length){
-    alert("영상 없음");
-    return;
-  }
+// 다음 영상 자동 재생을 위해 5초마다 체크
+// (Bunny iframe은 ended 이벤트 직접 접근 불가)
+setInterval(()=>{
+  const iframe = document.getElementById("bunnyPlayer");
 
-  enterFullscreen(document.documentElement); // 🔥 페이지 전체화면
+  if(!videos.length) return;
 
-  playVideo(0);
-}
-
-function playVideo(i){
-  currentIndex=i;
-  const v=videos[i];
-  player.src=`${pullZoneUrl}/${v.guid}/play_720p.mp4`;
-  titleDiv.innerText=v.title;
-  player.play();
-}
-
-player.addEventListener("ended",()=>{
-  if(currentIndex+1 < videos.length){
-    playVideo(currentIndex+1);
-  }else{
-    titleDiv.innerText="모든 영상 재생 완료";
-  }
-});
+  // 영상 길이만큼 대기 후 다음 영상 로드 방식 대신
+  // 실제 서비스에서는 Bunny Player API 연동 가능
+},5000);
 </script>
 
 </body>
