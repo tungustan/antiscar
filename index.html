@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Minimal Player</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
+<title>Mobile Player</title>
 
 <style>
 body{
@@ -26,119 +28,99 @@ video{
   background:black;
 }
 
-/* 시작 오버레이 */
-#startOverlay{
+/* 중앙 큰 재생 버튼 */
+#centerPlay{
   position:absolute;
   inset:0;
   display:flex;
   justify-content:center;
   align-items:center;
-  background:black;
+  font-size:60px;
   color:white;
-  font-size:20px;
-  z-index:20;
-  cursor:pointer;
+  opacity:.8;
+  pointer-events:none;
 }
 
-/* 컨트롤 영역 */
+/* 하단 컨트롤 */
 .controls{
   position:absolute;
-  bottom:20px;
+  bottom:25px;
   left:50%;
   transform:translateX(-50%);
   display:flex;
-  align-items:center;
-  gap:12px;
-  padding:8px 14px;
-  border-radius:30px;
-  backdrop-filter:blur(10px);
+  gap:20px;
+  padding:10px 20px;
+  border-radius:40px;
+  backdrop-filter:blur(15px);
   background:rgba(255,255,255,0.1);
-  transition:opacity .3s ease;
-}
-
-.hidden{
-  opacity:0;
-  pointer-events:none;
 }
 
 button{
   background:none;
   border:none;
   color:white;
-  font-size:18px;
-  padding:6px;
+  font-size:22px;
+  padding:10px;
 }
 
-#progress{
-  width:120px;
-  accent-color:white;
+/* 좌우 터치 영역 */
+.touch-zone{
+  position:absolute;
+  top:0;
+  width:50%;
+  height:100%;
 }
 
-#time{
-  font-size:12px;
-  opacity:.8;
-}
+#leftZone{ left:0; }
+#rightZone{ right:0; }
 </style>
 </head>
 <body>
 
 <div id="container">
 
-  <div id="startOverlay" onclick="startPlayer()">
-    Tap to Start
-  </div>
-
   <video id="player" playsinline></video>
 
-  <div id="controls" class="controls">
+  <div id="centerPlay">▶</div>
+
+  <div class="controls">
     <button onclick="prevVideo()">⏮</button>
     <button onclick="togglePlay()">⏯</button>
     <button onclick="nextVideo()">⏭</button>
-    <input type="range" id="progress" min="0" max="100" value="0">
-    <div id="time">0:00</div>
   </div>
+
+  <div id="leftZone" class="touch-zone"></div>
+  <div id="rightZone" class="touch-zone"></div>
 
 </div>
 
 <script>
-const pullZoneUrl = "https://vz-af7f48b7-cd1.b-cdn.net";
+const pullZoneUrl="https://vz-af7f48b7-cd1.b-cdn.net";
 
-const videos = [
+const videos=[
   "b5f37dc2-c84b-4ada-8f63-784c3962fd22",
   "e95789df-e709-434e-be8c-fdd6969ef422",
   "4dfa8dfd-8fb0-4221-b365-fa1d1ca91eb4"
 ];
 
 let currentIndex=0;
-let hideTimeout;
-
 const player=document.getElementById("player");
-const overlay=document.getElementById("startOverlay");
-const controls=document.getElementById("controls");
-const progress=document.getElementById("progress");
-const time=document.getElementById("time");
+const centerPlay=document.getElementById("centerPlay");
 
-function startPlayer(){
-  overlay.style.display="none";
-  enterFullscreen();
-  playVideo(0);
-}
-
-function enterFullscreen(){
-  const el=document.documentElement;
-  if(el.requestFullscreen) el.requestFullscreen();
-  else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-}
-
-function playVideo(index){
-  currentIndex=index;
+function playVideo(i){
+  currentIndex=i;
   player.src=`${pullZoneUrl}/${videos[currentIndex]}/play_720p.mp4`;
   player.play().catch(()=>{});
 }
 
 function togglePlay(){
-  if(player.paused) player.play();
-  else player.pause();
+  if(player.paused){
+    player.play();
+    centerPlay.style.display="none";
+  }else{
+    player.pause();
+    centerPlay.style.display="flex";
+  }
 }
 
 function nextVideo(){
@@ -151,40 +133,29 @@ function prevVideo(){
   playVideo(currentIndex);
 }
 
-player.addEventListener("timeupdate",()=>{
-  const percent=(player.currentTime/player.duration)*100||0;
-  progress.value=percent;
-  time.textContent=formatTime(player.currentTime);
+/* 자동 다음 */
+player.addEventListener("ended",nextVideo);
+
+/* 좌우 터치 → 이전/다음 */
+document.getElementById("leftZone").addEventListener("click",prevVideo);
+document.getElementById("rightZone").addEventListener("click",nextVideo);
+
+/* 더블탭 10초 이동 */
+let lastTap=0;
+document.addEventListener("touchend",(e)=>{
+  const now=new Date().getTime();
+  if(now-lastTap<300){
+    if(e.changedTouches[0].clientX < window.innerWidth/2){
+      player.currentTime-=10;
+    }else{
+      player.currentTime+=10;
+    }
+  }
+  lastTap=now;
 });
 
-progress.addEventListener("input",(e)=>{
-  player.currentTime=(e.target.value/100)*player.duration;
-});
-
-player.addEventListener("ended",()=>{
-  nextVideo();
-});
-
-function formatTime(t){
-  if(!t) return "0:00";
-  const m=Math.floor(t/60);
-  const s=Math.floor(t%60).toString().padStart(2,"0");
-  return `${m}:${s}`;
-}
-
-/* 🔥 자동 숨김 */
-function showControls(){
-  controls.classList.remove("hidden");
-  clearTimeout(hideTimeout);
-  hideTimeout=setTimeout(()=>{
-    controls.classList.add("hidden");
-  },2000);
-}
-
-document.addEventListener("mousemove",showControls);
-document.addEventListener("touchstart",showControls);
-
-showControls();
+/* 시작 */
+playVideo(0);
 </script>
 
 </body>
