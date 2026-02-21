@@ -1,24 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="theme-color" content="#000000">
-<title>Mobile Player</title>
+
+<title>Player</title>
 
 <style>
-body{
+html,body{
   margin:0;
+  padding:0;
   background:black;
   overflow:hidden;
+  height:100%;
   font-family:-apple-system,BlinkMacSystemFont,Arial;
 }
 
 #container{
-  position:relative;
-  width:100vw;
-  height:100vh;
+  position:fixed;
+  inset:0;
+  background:black;
 }
 
 video{
@@ -28,134 +32,206 @@ video{
   background:black;
 }
 
-/* 중앙 큰 재생 버튼 */
-#centerPlay{
+.controls{
   position:absolute;
-  inset:0;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  font-size:60px;
-  color:white;
-  opacity:.8;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  width:90%;
+  backdrop-filter:blur(15px);
+  background:rgba(255,255,255,0.08);
+  padding:12px 16px;
+  border-radius:20px;
+  transition:opacity .3s ease;
+}
+
+.controls.hidden{
+  opacity:0;
   pointer-events:none;
 }
 
-/* 하단 컨트롤 */
-.controls{
-  position:absolute;
-  bottom:25px;
-  left:50%;
-  transform:translateX(-50%);
+.control-buttons{
   display:flex;
-  gap:20px;
-  padding:10px 20px;
-  border-radius:40px;
-  backdrop-filter:blur(15px);
-  background:rgba(255,255,255,0.1);
+  justify-content:center;
+  gap:25px;
+  margin-bottom:8px;
 }
 
-button{
+.control-buttons button{
   background:none;
   border:none;
   color:white;
-  font-size:22px;
-  padding:10px;
+  font-size:20px;
 }
 
-/* 좌우 터치 영역 */
-.touch-zone{
-  position:absolute;
-  top:0;
-  width:50%;
-  height:100%;
+.progress-container{
+  display:flex;
+  align-items:center;
+  gap:8px;
 }
 
-#leftZone{ left:0; }
-#rightZone{ right:0; }
+.progress-container span{
+  font-size:12px;
+  color:white;
+  width:40px;
+  text-align:center;
+}
+
+input[type=range]{
+  flex:1;
+  -webkit-appearance:none;
+  height:4px;
+  border-radius:4px;
+  background:rgba(255,255,255,0.3);
+}
+
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:14px;
+  height:14px;
+  border-radius:50%;
+  background:white;
+}
 </style>
 </head>
 <body>
 
 <div id="container">
-
   <video id="player" playsinline></video>
 
-  <div id="centerPlay">▶</div>
+  <div class="controls" id="controls">
 
-  <div class="controls">
-    <button onclick="prevVideo()">⏮</button>
-    <button onclick="togglePlay()">⏯</button>
-    <button onclick="nextVideo()">⏭</button>
+    <div class="control-buttons">
+      <button onclick="prevVideo()">⏮</button>
+      <button onclick="togglePlay()">⏯</button>
+      <button onclick="nextVideo()">⏭</button>
+    </div>
+
+    <div class="progress-container">
+      <span id="currentTime">0:00</span>
+      <input type="range" id="progress" value="0" min="0" max="100">
+      <span id="duration">0:00</span>
+    </div>
+
   </div>
-
-  <div id="leftZone" class="touch-zone"></div>
-  <div id="rightZone" class="touch-zone"></div>
-
 </div>
 
 <script>
 const pullZoneUrl="https://vz-af7f48b7-cd1.b-cdn.net";
 
 const videos=[
-  "b5f37dc2-c84b-4ada-8f63-784c3962fd22",
-  "e95789df-e709-434e-be8c-fdd6969ef422",
-  "4dfa8dfd-8fb0-4221-b365-fa1d1ca91eb4"
+"b5f37dc2-c84b-4ada-8f63-784c3962fd22",
+"e95789df-e709-434e-be8c-fdd6969ef422",
+"4dfa8dfd-8fb0-4221-b365-fa1d1ca91eb4"
 ];
 
 let currentIndex=0;
-const player=document.getElementById("player");
-const centerPlay=document.getElementById("centerPlay");
+let hideTimeout;
 
-function playVideo(i){
-  currentIndex=i;
+const player=document.getElementById("player");
+const progress=document.getElementById("progress");
+const currentTimeEl=document.getElementById("currentTime");
+const durationEl=document.getElementById("duration");
+const controls=document.getElementById("controls");
+
+/* 시간 포맷 */
+function formatTime(sec){
+  const m=Math.floor(sec/60);
+  const s=Math.floor(sec%60);
+  return m+":"+(s<10?"0":"")+s;
+}
+
+/* 영상 재생 */
+function playVideo(index){
+  currentIndex=index;
   player.src=`${pullZoneUrl}/${videos[currentIndex]}/play_720p.mp4`;
   player.play().catch(()=>{});
 }
 
+/* 이전 */
+function prevVideo(){
+  if(currentIndex>0){
+    playVideo(currentIndex-1);
+  }
+}
+
+/* 다음 */
+function nextVideo(){
+  if(currentIndex < videos.length-1){
+    playVideo(currentIndex+1);
+  }
+}
+
+/* 재생/일시정지 */
 function togglePlay(){
   if(player.paused){
     player.play();
-    centerPlay.style.display="none";
   }else{
     player.pause();
-    centerPlay.style.display="flex";
   }
-}
-
-function nextVideo(){
-  currentIndex=(currentIndex+1)%videos.length;
-  playVideo(currentIndex);
-}
-
-function prevVideo(){
-  currentIndex=(currentIndex-1+videos.length)%videos.length;
-  playVideo(currentIndex);
 }
 
 /* 자동 다음 */
-player.addEventListener("ended",nextVideo);
-
-/* 좌우 터치 → 이전/다음 */
-document.getElementById("leftZone").addEventListener("click",prevVideo);
-document.getElementById("rightZone").addEventListener("click",nextVideo);
-
-/* 더블탭 10초 이동 */
-let lastTap=0;
-document.addEventListener("touchend",(e)=>{
-  const now=new Date().getTime();
-  if(now-lastTap<300){
-    if(e.changedTouches[0].clientX < window.innerWidth/2){
-      player.currentTime-=10;
-    }else{
-      player.currentTime+=10;
-    }
+player.addEventListener("ended",()=>{
+  if(currentIndex < videos.length-1){
+    nextVideo();
   }
-  lastTap=now;
 });
+
+/* 진행바 업데이트 */
+player.addEventListener("timeupdate",()=>{
+  const percent=(player.currentTime/player.duration)*100;
+  progress.value=percent || 0;
+  currentTimeEl.textContent=formatTime(player.currentTime);
+});
+
+/* 총 시간 */
+player.addEventListener("loadedmetadata",()=>{
+  durationEl.textContent=formatTime(player.duration);
+});
+
+/* 진행바 이동 */
+progress.addEventListener("input",()=>{
+  const time=(progress.value/100)*player.duration;
+  player.currentTime=time;
+});
+
+/* =========================
+   UI 자동 숨김 로직
+========================= */
+
+function showControls(){
+  controls.classList.remove("hidden");
+  clearTimeout(hideTimeout);
+
+  if(!player.paused){
+    hideTimeout=setTimeout(()=>{
+      controls.classList.add("hidden");
+    },3000);
+  }
+}
+
+/* 재생하면 3초 후 숨김 */
+player.addEventListener("play",showControls);
+
+/* 멈추면 항상 표시 */
+player.addEventListener("pause",()=>{
+  controls.classList.remove("hidden");
+  clearTimeout(hideTimeout);
+});
+
+/* 화면 터치하면 UI 표시 */
+document.getElementById("container").addEventListener("click",showControls);
 
 /* 시작 */
 playVideo(0);
+
+/* 전체화면 시도 */
+document.body.addEventListener("click",()=>{
+  if(document.fullscreenElement==null){
+    document.documentElement.requestFullscreen().catch(()=>{});
+  }
+},{once:true});
 </script>
 
 </body>
