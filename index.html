@@ -6,16 +6,17 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="theme-color" content="#000000">
-<title>Mobile Player</title>
+<title>Player</title>
 
 <style>
 html,body{
   margin:0;
   padding:0;
   background:black;
-  overflow:hidden;
   height:100%;
+  overflow:hidden;
   font-family:-apple-system,BlinkMacSystemFont,Arial;
+  color:white;
 }
 
 #container{
@@ -31,16 +32,35 @@ video{
   background:black;
 }
 
+/* 시작 오버레이 */
+.start-screen{
+  position:absolute;
+  inset:0;
+  background:black;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:70px;
+  z-index:5;
+}
+
+/* 상단 */
+.top-bar{
+  position:absolute;
+  top:0;
+  width:100%;
+  padding:20px;
+  background:linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+  font-size:14px;
+}
+
+/* 하단 */
 .controls{
   position:absolute;
-  bottom:20px;
-  left:50%;
-  transform:translateX(-50%);
-  width:90%;
-  backdrop-filter:blur(15px);
-  background:rgba(255,255,255,0.08);
-  padding:12px 16px;
-  border-radius:20px;
+  bottom:0;
+  width:100%;
+  padding:20px;
+  background:linear-gradient(to top, rgba(0,0,0,0.8), transparent);
   transition:opacity .3s ease;
 }
 
@@ -49,47 +69,37 @@ video{
   pointer-events:none;
 }
 
-.control-buttons{
+/* 진행바 */
+.progress{
+  width:100%;
+  height:3px;
+  background:rgba(255,255,255,0.3);
+  position:relative;
+  margin-bottom:15px;
+}
+
+.progress-filled{
+  height:100%;
+  width:0%;
+  background:#e50914;
+}
+
+/* 버튼 */
+.button-row{
   display:flex;
   justify-content:center;
-  gap:25px;
-  margin-bottom:8px;
+  gap:40px;
 }
 
-.control-buttons button{
-  background:none;
-  border:none;
-  color:white;
-  font-size:20px;
-}
-
-.progress-container{
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-
-.progress-container span{
-  font-size:12px;
-  color:white;
-  width:40px;
-  text-align:center;
-}
-
-input[type=range]{
-  flex:1;
-  -webkit-appearance:none;
-  height:4px;
-  border-radius:4px;
-  background:rgba(255,255,255,0.3);
-}
-
-input[type=range]::-webkit-slider-thumb{
-  -webkit-appearance:none;
-  width:14px;
-  height:14px;
+.circle-btn{
+  width:50px;
+  height:50px;
   border-radius:50%;
-  background:white;
+  background:rgba(255,255,255,0.15);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:22px;
 }
 </style>
 </head>
@@ -97,23 +107,29 @@ input[type=range]::-webkit-slider-thumb{
 <body>
 
 <div id="container">
+
   <video id="player" playsinline></video>
+
+  <div class="start-screen" id="startScreen">▶</div>
+
+  <div class="top-bar">
+    <span id="videoIndex">1 / 3</span>
+  </div>
 
   <div class="controls" id="controls">
 
-    <div class="control-buttons">
-      <button onclick="prevVideo()">⏮</button>
-      <button onclick="togglePlay()">⏯</button>
-      <button onclick="nextVideo()">⏭</button>
+    <div class="progress">
+      <div class="progress-filled" id="progressFilled"></div>
     </div>
 
-    <div class="progress-container">
-      <span id="currentTime">0:00</span>
-      <input type="range" id="progress" value="0" min="0" max="100">
-      <span id="duration">0:00</span>
+    <div class="button-row">
+      <div class="circle-btn" onclick="prevVideo()">⏮</div>
+      <div class="circle-btn" onclick="togglePlay()">⏯</div>
+      <div class="circle-btn" onclick="nextVideo()">⏭</div>
     </div>
 
   </div>
+
 </div>
 
 <script>
@@ -127,40 +143,40 @@ const videos=[
 
 let currentIndex=0;
 let hideTimeout;
+let started=false;
 
 const player=document.getElementById("player");
-const progress=document.getElementById("progress");
-const currentTimeEl=document.getElementById("currentTime");
-const durationEl=document.getElementById("duration");
 const controls=document.getElementById("controls");
+const progressFilled=document.getElementById("progressFilled");
+const videoIndexText=document.getElementById("videoIndex");
+const startScreen=document.getElementById("startScreen");
 
-/* 시간 포맷 */
-function formatTime(sec){
-  if(!sec) return "0:00";
-  const m=Math.floor(sec/60);
-  const s=Math.floor(sec%60);
-  return m+":"+(s<10?"0":"")+s;
-}
-
-/* 영상 재생 (HLS 사용) */
-function playVideo(index){
+/* 영상 로드만 (재생 X) */
+function loadVideo(index){
   currentIndex=index;
   player.src=`${pullZoneUrl}/${videos[currentIndex]}/playlist.m3u8`;
   player.load();
-  player.play().catch(()=>{});
+  updateIndex();
+}
+
+/* 인덱스 표시 */
+function updateIndex(){
+  videoIndexText.textContent=(currentIndex+1)+" / "+videos.length;
 }
 
 /* 이전 */
 function prevVideo(){
   if(currentIndex>0){
-    playVideo(currentIndex-1);
+    loadVideo(currentIndex-1);
+    player.play();
   }
 }
 
 /* 다음 */
 function nextVideo(){
   if(currentIndex < videos.length-1){
-    playVideo(currentIndex+1);
+    loadVideo(currentIndex+1);
+    player.play();
   }
 }
 
@@ -180,32 +196,15 @@ player.addEventListener("ended",()=>{
   }
 });
 
-/* 진행바 업데이트 */
+/* 진행바 */
 player.addEventListener("timeupdate",()=>{
   if(player.duration){
     const percent=(player.currentTime/player.duration)*100;
-    progress.value=percent;
-    currentTimeEl.textContent=formatTime(player.currentTime);
+    progressFilled.style.width=percent+"%";
   }
 });
 
-/* 총 시간 */
-player.addEventListener("loadedmetadata",()=>{
-  durationEl.textContent=formatTime(player.duration);
-});
-
-/* 진행바 이동 */
-progress.addEventListener("input",()=>{
-  if(player.duration){
-    const time=(progress.value/100)*player.duration;
-    player.currentTime=time;
-  }
-});
-
-/* =========================
-   UI 자동 숨김 로직
-========================= */
-
+/* UI 표시 */
 function showControls(){
   controls.classList.remove("hidden");
   clearTimeout(hideTimeout);
@@ -217,24 +216,34 @@ function showControls(){
   }
 }
 
-player.addEventListener("play",showControls);
+player.addEventListener("play",()=>{
+  showControls();
+});
 
 player.addEventListener("pause",()=>{
   controls.classList.remove("hidden");
-  clearTimeout(hideTimeout);
 });
 
-document.getElementById("container").addEventListener("click",showControls);
+/* 첫 시작 터치 */
+startScreen.addEventListener("click",()=>{
+  if(!started){
+    started=true;
+    startScreen.style.display="none";
+    player.play();
 
-/* 시작 */
-playVideo(0);
-
-/* 첫 터치 시 전체화면 시도 */
-document.body.addEventListener("click",()=>{
-  if(document.fullscreenElement==null){
-    document.documentElement.requestFullscreen().catch(()=>{});
+    if(document.fullscreenElement==null){
+      document.documentElement.requestFullscreen().catch(()=>{});
+    }
   }
-},{once:true});
+});
+
+/* 화면 터치 시 UI */
+document.getElementById("container").addEventListener("click",()=>{
+  if(started) showControls();
+});
+
+/* 초기 로드 */
+loadVideo(0);
 </script>
 
 </body>
