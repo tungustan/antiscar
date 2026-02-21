@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Video Player</title>
+<title>Stable Fullscreen Player</title>
 
 <style>
 body{
@@ -62,7 +62,8 @@ button{
     Tap to Start
   </div>
 
-  <video id="player" playsinline controls></video>
+  <!-- 🔥 controls 제거 -->
+  <video id="player" playsinline></video>
 
   <div class="controls">
     <button onclick="prevVideo()">⏮ Prev</button>
