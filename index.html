@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Archive Player</title>
 
 <style>
@@ -11,7 +11,17 @@ html,body{
   padding:0;
   background:black;
   font-family:-apple-system,BlinkMacSystemFont,Arial;
-  color:white;
+}
+
+/* 🔥 완전 중앙 고정 방식 */
+#app{
+  width:100%;
+  max-width:500px;
+  margin:0 auto;        /* 이게 핵심 */
+  position:relative;
+  min-height:100vh;
+  background:black;
+  overflow:hidden;
 }
 
 /* ===== 아카이브 ===== */
@@ -32,28 +42,22 @@ html,body{
 
 .card{
   aspect-ratio:16/9;
-  background:#111;
   border-radius:12px;
+  background:#111;
   overflow:hidden;
-  position:relative;
   cursor:pointer;
-  transition:transform .2s ease;
+  background-size:cover;
+  background-position:center;
+  transition:transform .2s;
 }
 
 .card:active{
   transform:scale(.95);
 }
 
-.card::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  background:linear-gradient(to top, rgba(0,0,0,.6), transparent);
-}
-
 /* ===== 플레이어 ===== */
 #playerScreen{
-  position:fixed;
+  position:absolute;
   inset:0;
   background:black;
   display:none;
@@ -66,12 +70,23 @@ video{
   background:black;
 }
 
+/* 뒤로가기 */
+.back{
+  position:absolute;
+  top:20px;
+  left:20px;
+  font-size:14px;
+  z-index:10;
+  cursor:pointer;
+}
+
+/* 컨트롤 */
 .controls{
   position:absolute;
   bottom:0;
   width:100%;
   padding:20px;
-  background:linear-gradient(to top, rgba(0,0,0,.8), transparent);
+  background:linear-gradient(to top, rgba(0,0,0,.85), transparent);
 }
 
 /* 진행바 */
@@ -98,50 +113,37 @@ input[type=range]::-webkit-slider-thumb{
   gap:60px;
 }
 
-/* 버튼 공통 */
+/* 버튼 */
 .btn{
   width:64px;
   height:64px;
   border-radius:50%;
-  background:rgba(255,255,255,.08);
-  backdrop-filter:blur(10px);
+  background:rgba(255,255,255,.1);
   display:flex;
   align-items:center;
   justify-content:center;
-  transition:transform .15s ease;
+  font-size:18px;
+  color:white;
   cursor:pointer;
+  user-select:none;
+  transition:transform .15s;
 }
 
 .btn:active{
   transform:scale(.9);
-}
-
-.btn svg{
-  width:26px;
-  height:26px;
-  fill:white;
-}
-
-/* 뒤로가기 */
-.back{
-  position:absolute;
-  top:20px;
-  left:20px;
-  font-size:14px;
-  cursor:pointer;
 }
 </style>
 </head>
 
 <body>
 
-<!-- ===== 아카이브 ===== -->
+<div id="app">
+
 <div id="archive">
   <div class="archive-title">Archive</div>
   <div class="grid" id="grid"></div>
 </div>
 
-<!-- ===== 플레이어 ===== -->
 <div id="playerScreen">
   <div class="back" onclick="goBack()">← Back</div>
   <video id="player" playsinline></video>
@@ -150,31 +152,13 @@ input[type=range]::-webkit-slider-thumb{
     <input type="range" id="progress" value="0" min="0" max="100">
 
     <div class="button-row">
-      <div id="prevBtn" class="btn">
-        <svg viewBox="0 0 24 24">
-          <polygon points="11,12 18,18 18,6"/>
-          <polygon points="4,12 11,18 11,6"/>
-        </svg>
-      </div>
-
-      <div id="playBtn" class="btn">
-        <svg id="playIcon" viewBox="0 0 24 24">
-          <polygon points="8,5 19,12 8,19"/>
-        </svg>
-        <svg id="pauseIcon" viewBox="0 0 24 24" style="display:none">
-          <rect x="6" y="5" width="4" height="14"/>
-          <rect x="14" y="5" width="4" height="14"/>
-        </svg>
-      </div>
-
-      <div id="nextBtn" class="btn">
-        <svg viewBox="0 0 24 24">
-          <polygon points="6,6 13,12 6,18"/>
-          <polygon points="13,6 20,12 13,18"/>
-        </svg>
-      </div>
+      <div id="minusBtn" class="btn">-10</div>
+      <div id="playBtn" class="btn">▶</div>
+      <div id="plusBtn" class="btn">+10</div>
     </div>
   </div>
+</div>
+
 </div>
 
 <script>
@@ -186,7 +170,6 @@ const videos=[
 "4dfa8dfd-8fb0-4221-b365-fa1d1ca91eb4"
 ];
 
-/* 🔥 여기 포스터 이미지 넣으면 됨 */
 const posters=[
 "poster1.jpg",
 "poster2.jpg",
@@ -195,19 +178,16 @@ const posters=[
 
 const grid=document.getElementById("grid");
 const player=document.getElementById("player");
-const playIcon=document.getElementById("playIcon");
-const pauseIcon=document.getElementById("pauseIcon");
 const progress=document.getElementById("progress");
+const playBtn=document.getElementById("playBtn");
 
 let currentIndex=0;
 
-/* 아카이브 카드 생성 */
+/* 카드 생성 */
 videos.forEach((v,i)=>{
   const card=document.createElement("div");
   card.className="card";
   card.style.backgroundImage=`url(${posters[i]})`;
-  card.style.backgroundSize="cover";
-  card.style.backgroundPosition="center";
   card.onclick=()=>startVideo(i);
   grid.appendChild(card);
 });
@@ -218,6 +198,7 @@ function startVideo(index){
   document.getElementById("playerScreen").style.display="block";
   loadVideo();
   player.play();
+  updatePlayIcon();
 }
 
 function goBack(){
@@ -230,43 +211,33 @@ function loadVideo(){
   player.src=`${pullZoneUrl}/${videos[currentIndex]}/playlist.m3u8`;
 }
 
-/* 아이콘 전환 */
-function updateIcon(){
-  if(player.paused){
-    playIcon.style.display="block";
-    pauseIcon.style.display="none";
-  }else{
-    playIcon.style.display="none";
-    pauseIcon.style.display="block";
-  }
-}
+/* 🔥 화면 터치하면 재생/정지 */
+player.addEventListener("click",()=>{
+  player.paused?player.play():player.pause();
+});
 
-document.getElementById("playBtn").onclick=()=>{
+playBtn.onclick=()=>{
   player.paused?player.play():player.pause();
 };
 
-player.addEventListener("play",updateIcon);
-player.addEventListener("pause",updateIcon);
+function updatePlayIcon(){
+  playBtn.textContent = player.paused ? "▶" : "⏸";
+}
 
-/* 이전 */
-document.getElementById("prevBtn").onclick=()=>{
-  if(currentIndex>0){
-    currentIndex--;
-    loadVideo();
-    player.play();
-  }
+player.addEventListener("play",updatePlayIcon);
+player.addEventListener("pause",updatePlayIcon);
+
+/* -10초 */
+document.getElementById("minusBtn").onclick=()=>{
+  player.currentTime=Math.max(0,player.currentTime-10);
 };
 
-/* 다음 */
-document.getElementById("nextBtn").onclick=()=>{
-  if(currentIndex<videos.length-1){
-    currentIndex++;
-    loadVideo();
-    player.play();
-  }
+/* +10초 */
+document.getElementById("plusBtn").onclick=()=>{
+  player.currentTime=Math.min(player.duration,player.currentTime+10);
 };
 
-/* 🔥 자동 다음 (추가됨) */
+/* 자동 다음 영상 */
 player.addEventListener("ended",()=>{
   if(currentIndex < videos.length-1){
     currentIndex++;
