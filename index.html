@@ -86,13 +86,16 @@ video{
 /* 컨트롤 */
 .controls{
   position:absolute;
-  bottom:40px; /* 검색창과 간격 확보 */
+  bottom:20px; /* 🔥 화면과 박스 간격 확보 */
   left:0;
   width:100%;
   padding:20px;
   box-sizing:border-box;
   background:linear-gradient(to top, rgba(0,0,0,.9), transparent);
-  transition:opacity .3s ease;
+  
+  /* 🔥 페이드 인/아웃 */
+  opacity:1;
+  transition:opacity 0.3s ease;
 }
 
 .controls.hide{
@@ -264,7 +267,6 @@ document.getElementById("minusBtn").onclick=()=>{
   player.currentTime=Math.max(0,player.currentTime-10);
   showControls();
 };
-
 document.getElementById("plusBtn").onclick=()=>{
   player.currentTime=Math.min(player.duration,player.currentTime+10);
   showControls();
@@ -307,12 +309,12 @@ player.addEventListener("ended",()=>{
   }
 });
 
-/* 🔥 컨트롤 표시 + 3초 후 숨김 */
+/* 🔥 컨트롤 표시 + 3초 후 페이드 아웃 */
 function showControls(){
   controls.classList.remove("hide");
   clearTimeout(hideTimer);
   hideTimer=setTimeout(()=>{
-    controls.classList.add("hide");
+    controls.classList.add("hide"); // transition으로 디졸브 처리
   },3000);
 }
 </script>
