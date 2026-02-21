@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bunny Player</title>
+    <title>Bunny Stream Player</title>
     <script src="https://assets.mediadelivery.net"></script>
     <style>
         body { background: #000; color: #fff; margin: 0; padding: 0; font-family: sans-serif; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
@@ -11,7 +11,7 @@
         input { padding: 15px; font-size: 18px; border-radius: 12px; border: 1px solid #333; margin-bottom: 15px; width: 220px; text-align: center; background: #222; color: #fff; outline: none; }
         button { padding: 15px 40px; font-size: 18px; background: #007bff; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
         #content { display: none; width: 100%; height: 100%; flex-direction: column; justify-content: center; }
-        .player-container { position: relative; width: 100%; padding-top: 177.77%; /* 9:16 비율 */ }
+        .player-container { position: relative; width: 100%; padding-top: 177.77%; /* 9:16 세로비율 */ }
         iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
         #info-bar { padding: 15px; background: rgba(0,0,0,0.8); font-size: 12px; text-align: center; color: #aaa; position: absolute; bottom: 0; width: 100%; z-index: 10; }
     </style>
@@ -27,12 +27,12 @@
         <div class="player-container">
             <iframe id="bunny-player" src="" allow="autoplay; fullscreen; playsinline" allowfullscreen></iframe>
         </div>
-        <div id="info-bar">데이터 로딩 중...</div>
+        <div id="info-bar">데이터 로드 중...</div>
     </div>
 
     <script>
-        const LIBRARY_ID = '603825';
-        const API_KEY = '8b148e03-db31-41c1-89fa29184619-0d59-4439'; 
+        const LIBRARY_ID = '603895'; 
+        const API_KEY = '949e6132-ca0a-43b7-853f381e9d25-08e7-4ce6'; 
 
         let videoList = [];
         let currentIndex = 0;
@@ -48,45 +48,43 @@
         }
 
         async function fetchVideos() {
-            // 브라우저 차단을 피하기 위해 프록시 서버(allorigins)를 경유하여 데이터를 가져옵니다.
-            const targetUrl = `https://video.bunnycdn.com{LIBRARY_ID}/videos?perPage=100`;
-            const proxyUrl = `https://api.allorigins.win{encodeURIComponent(targetUrl)}`;
-
             try {
-                // 이 API 호출은 헤더 없이 URL 정보를 가져오는 방식입니다.
-                // 만약 여전히 차단된다면 버니넷 [Security] 메뉴에서 Allowed Domains에 '*'를 추가해야 합니다.
-                const response = await fetch(proxyUrl);
-                const result = await response.json();
+                // 버니넷 API 호출
+                const response = await fetch(`https://video.bunnycdn.com{LIBRARY_ID}/videos?perPage=100`, {
+                    headers: { 'AccessKey': API_KEY, 'accept': 'application/json' }
+                });
                 
-                // 프록시를 통해 전달된 데이터 파싱
-                const rawData = JSON.parse(result.contents);
-                videoList = rawData.items.sort((a, b) => a.title.localeCompare(b.title, undefined, {numeric: true}));
+                if (!response.ok) throw new Error("인증 실패 (401)");
                 
-                if (videoList.length > 0) {
-                    playVideo(0);
-                } else {
-                    infoBar.innerText = "영상이 없습니다.";
-                }
+                const data = await response.json();
+                // 제목 기준 자연스러운 숫자 정렬 (ep1, ep2...)
+                videoList = data.items.sort((a, b) => a.title.localeCompare(b.title, undefined, {numeric: true}));
+                
+                if (videoList.length > 0) playVideo(0);
+                else infoBar.innerText = "라이브러리에 영상이 없습니다.";
             } catch (err) {
                 console.error(err);
-                infoBar.innerText = "❌ 데이터 로드 실패. 버니넷 Security 설정에서 '*'를 허용해 주세요.";
+                infoBar.innerText = "❌ 로드 실패: 버니넷 Security 설정에서 '*' 또는 'tungustan.github.io'를 추가하고 저장했는지 확인하세요.";
             }
         }
 
         function playVideo(index) {
-            if (index >= videoList.length) { infoBar.innerText = "정주행 완료!"; return; }
+            if (index >= videoList.length) { infoBar.innerText = "🎉 모든 영상 정주행 완료!"; return; }
             currentIndex = index;
             const video = videoList[index];
-            // 모바일 최적화 파라미터 적용
-            iframe.src = `https://iframe.mediadelivery.net{LIBRARY_ID}/${video.guid}?autoplay=true&playsinline=1`;
+            // 모바일 인라인 재생 최적화
+            iframe.src = `https://iframe.mediadelivery.net{LIBRARY_ID}/${video.guid}?autoplay=true&playsinline=true`;
             infoBar.innerText = `재생 중 [${index + 1}/${videoList.length}]: ${video.title}`;
 
-            // Player.js로 영상 종료 감지
+            // Player.js로 영상 종료 감지 -> 다음 영상 호출
             const player = new playerjs.Player(iframe);
             player.on('ready', () => {
                 player.on('ended', () => playVideo(currentIndex + 1));
             });
         }
+
+        // 엔터키 지원
+        document.getElementById('pw-input').onkeypress = (e) => { if(e.key === 'Enter') checkPassword(); };
     </script>
 </body>
 </html>
