@@ -32,7 +32,7 @@ video{
   background:black;
 }
 
-/* 시작 오버레이 */
+/* 시작 화면 */
 .start-screen{
   position:absolute;
   inset:0;
@@ -70,17 +70,19 @@ video{
 }
 
 /* 진행바 */
-.progress{
+input[type=range]{
   width:100%;
+  -webkit-appearance:none;
   height:3px;
   background:rgba(255,255,255,0.3);
-  position:relative;
   margin-bottom:15px;
 }
 
-.progress-filled{
-  height:100%;
-  width:0%;
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:14px;
+  height:14px;
+  border-radius:50%;
   background:#e50914;
 }
 
@@ -89,17 +91,12 @@ video{
   display:flex;
   justify-content:center;
   gap:40px;
+  font-size:26px;
 }
 
-.circle-btn{
-  width:50px;
-  height:50px;
-  border-radius:50%;
-  background:rgba(255,255,255,0.15);
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  font-size:22px;
+.button-row div{
+  cursor:pointer;
+  user-select:none;
 }
 </style>
 </head>
@@ -118,14 +115,12 @@ video{
 
   <div class="controls" id="controls">
 
-    <div class="progress">
-      <div class="progress-filled" id="progressFilled"></div>
-    </div>
+    <input type="range" id="progress" value="0" min="0" max="100">
 
     <div class="button-row">
-      <div class="circle-btn" onclick="prevVideo()">⏮</div>
-      <div class="circle-btn" onclick="togglePlay()">⏯</div>
-      <div class="circle-btn" onclick="nextVideo()">⏭</div>
+      <div id="prevBtn">⏮</div>
+      <div id="playBtn">⏯</div>
+      <div id="nextBtn">⏭</div>
     </div>
 
   </div>
@@ -147,11 +142,11 @@ let started=false;
 
 const player=document.getElementById("player");
 const controls=document.getElementById("controls");
-const progressFilled=document.getElementById("progressFilled");
+const progress=document.getElementById("progress");
 const videoIndexText=document.getElementById("videoIndex");
 const startScreen=document.getElementById("startScreen");
 
-/* 영상 로드만 (재생 X) */
+/* 로드만 */
 function loadVideo(index){
   currentIndex=index;
   player.src=`${pullZoneUrl}/${videos[currentIndex]}/playlist.m3u8`;
@@ -159,48 +154,63 @@ function loadVideo(index){
   updateIndex();
 }
 
-/* 인덱스 표시 */
 function updateIndex(){
   videoIndexText.textContent=(currentIndex+1)+" / "+videos.length;
 }
 
+/* 재생 */
+function play(){
+  player.play();
+}
+
+function pause(){
+  player.pause();
+}
+
 /* 이전 */
-function prevVideo(){
+document.getElementById("prevBtn").addEventListener("click",(e)=>{
+  e.stopPropagation();
   if(currentIndex>0){
     loadVideo(currentIndex-1);
-    player.play();
+    play();
   }
-}
+});
 
 /* 다음 */
-function nextVideo(){
+document.getElementById("nextBtn").addEventListener("click",(e)=>{
+  e.stopPropagation();
   if(currentIndex < videos.length-1){
     loadVideo(currentIndex+1);
-    player.play();
+    play();
   }
-}
+});
 
-/* 재생/일시정지 */
-function togglePlay(){
-  if(player.paused){
-    player.play();
-  }else{
-    player.pause();
-  }
-}
+/* 버튼 재생 */
+document.getElementById("playBtn").addEventListener("click",(e)=>{
+  e.stopPropagation();
+  player.paused ? play() : pause();
+});
 
 /* 자동 다음 */
 player.addEventListener("ended",()=>{
   if(currentIndex < videos.length-1){
-    nextVideo();
+    loadVideo(currentIndex+1);
+    play();
   }
 });
 
-/* 진행바 */
+/* 진행바 업데이트 */
 player.addEventListener("timeupdate",()=>{
   if(player.duration){
-    const percent=(player.currentTime/player.duration)*100;
-    progressFilled.style.width=percent+"%";
+    progress.value=(player.currentTime/player.duration)*100;
+  }
+});
+
+/* 진행바 조작 */
+progress.addEventListener("input",(e)=>{
+  e.stopPropagation();
+  if(player.duration){
+    player.currentTime=(progress.value/100)*player.duration;
   }
 });
 
@@ -216,33 +226,27 @@ function showControls(){
   }
 }
 
-player.addEventListener("play",()=>{
-  showControls();
+player.addEventListener("play",showControls);
+player.addEventListener("pause",()=>controls.classList.remove("hidden"));
+
+/* 화면 터치 = 재생/일시정지 */
+document.getElementById("container").addEventListener("click",()=>{
+  if(!started) return;
+  player.paused ? play() : pause();
 });
 
-player.addEventListener("pause",()=>{
-  controls.classList.remove("hidden");
-});
-
-/* 첫 시작 터치 */
+/* 첫 시작 */
 startScreen.addEventListener("click",()=>{
-  if(!started){
-    started=true;
-    startScreen.style.display="none";
-    player.play();
+  started=true;
+  startScreen.style.display="none";
+  play();
 
-    if(document.fullscreenElement==null){
-      document.documentElement.requestFullscreen().catch(()=>{});
-    }
+  if(document.fullscreenElement==null){
+    document.documentElement.requestFullscreen().catch(()=>{});
   }
 });
 
-/* 화면 터치 시 UI */
-document.getElementById("container").addEventListener("click",()=>{
-  if(started) showControls();
-});
-
-/* 초기 로드 */
+/* 초기 */
 loadVideo(0);
 </script>
 
