@@ -40,9 +40,14 @@ video{
   display:flex;
   justify-content:center;
   align-items:center;
-  font-size:80px;
   z-index:5;
   cursor:pointer;
+}
+
+.start-screen svg{
+  width:90px;
+  height:90px;
+  fill:white;
 }
 
 /* 상단 */
@@ -91,27 +96,30 @@ input[type=range]::-webkit-slider-thumb{
 .button-row{
   display:flex;
   justify-content:center;
-  gap:60px;
+  gap:70px;
 }
 
 /* 버튼 */
-.button-row div{
-  width:80px;
-  height:80px;
-  font-size:34px;
+.button{
+  width:90px;
+  height:90px;
   border-radius:50%;
   background:rgba(255,255,255,0.08);
   display:flex;
   align-items:center;
   justify-content:center;
   cursor:pointer;
-  user-select:none;
-  color:white;
   backdrop-filter:blur(6px);
   transition:all .2s ease;
 }
 
-.button-row div:active{
+.button svg{
+  width:36px;
+  height:36px;
+  fill:white;
+}
+
+.button:active{
   transform:scale(0.9);
   background:rgba(255,255,255,0.18);
 }
@@ -124,7 +132,11 @@ input[type=range]::-webkit-slider-thumb{
 
   <video id="player" playsinline></video>
 
-  <div class="start-screen" id="startScreen">▶</div>
+  <div class="start-screen" id="startScreen">
+    <svg viewBox="0 0 24 24">
+      <polygon points="5,3 19,12 5,21"></polygon>
+    </svg>
+  </div>
 
   <div class="top-bar">
     <span id="videoIndex">1 / 3</span>
@@ -135,9 +147,21 @@ input[type=range]::-webkit-slider-thumb{
     <input type="range" id="progress" value="0" min="0" max="100">
 
     <div class="button-row">
-      <div id="prevBtn">⏮</div>
-      <div id="playBtn">⏯</div>
-      <div id="nextBtn">⏭</div>
+      <div class="button" id="prevBtn">
+        <svg viewBox="0 0 24 24">
+          <polygon points="11,12 18,18 18,6"></polygon>
+          <polygon points="6,12 13,18 13,6"></polygon>
+        </svg>
+      </div>
+
+      <div class="button" id="playBtn"></div>
+
+      <div class="button" id="nextBtn">
+        <svg viewBox="0 0 24 24">
+          <polygon points="13,12 6,18 6,6"></polygon>
+          <polygon points="18,12 11,18 11,6"></polygon>
+        </svg>
+      </div>
     </div>
 
   </div>
@@ -162,78 +186,34 @@ const controls=document.getElementById("controls");
 const progress=document.getElementById("progress");
 const videoIndexText=document.getElementById("videoIndex");
 const startScreen=document.getElementById("startScreen");
+const playBtn=document.getElementById("playBtn");
+
+/* 재생 아이콘 업데이트 */
+function updatePlayIcon(){
+  if(player.paused){
+    playBtn.innerHTML=`
+      <svg viewBox="0 0 24 24">
+        <polygon points="5,3 19,12 5,21"></polygon>
+      </svg>`;
+  }else{
+    playBtn.innerHTML=`
+      <svg viewBox="0 0 24 24">
+        <rect x="6" y="4" width="4" height="16"/>
+        <rect x="14" y="4" width="4" height="16"/>
+      </svg>`;
+  }
+}
 
 function loadVideo(index){
   currentIndex=index;
-  player.src=`${pullZoneUrl}/${videos[currentIndex]}/playlist.m3u8`;
+  player.src=\`\${pullZoneUrl}/\${videos[currentIndex]}/playlist.m3u8\`;
   player.load();
-  updateIndex();
-}
-
-function updateIndex(){
   videoIndexText.textContent=(currentIndex+1)+" / "+videos.length;
 }
 
-function play(){
-  player.play();
-}
-
-function pause(){
-  player.pause();
-}
-
-/* 이전 */
-document.getElementById("prevBtn").addEventListener("click",(e)=>{
-  e.stopPropagation();
-  if(currentIndex>0){
-    loadVideo(currentIndex-1);
-    play();
-  }
-});
-
-/* 다음 */
-document.getElementById("nextBtn").addEventListener("click",(e)=>{
-  e.stopPropagation();
-  if(currentIndex < videos.length-1){
-    loadVideo(currentIndex+1);
-    play();
-  }
-});
-
-/* 재생 버튼 */
-document.getElementById("playBtn").addEventListener("click",(e)=>{
-  e.stopPropagation();
-  player.paused ? play() : pause();
-});
-
-/* 자동 다음 */
-player.addEventListener("ended",()=>{
-  if(currentIndex < videos.length-1){
-    loadVideo(currentIndex+1);
-    play();
-  }
-});
-
-/* 진행바 업데이트 */
-player.addEventListener("timeupdate",()=>{
-  if(player.duration){
-    progress.value=(player.currentTime/player.duration)*100;
-  }
-});
-
-/* 진행바 조작 */
-progress.addEventListener("input",(e)=>{
-  e.stopPropagation();
-  if(player.duration){
-    player.currentTime=(progress.value/100)*player.duration;
-  }
-});
-
-/* UI 표시 */
 function showControls(){
   controls.classList.remove("hidden");
   clearTimeout(hideTimeout);
-
   if(!player.paused){
     hideTimeout=setTimeout(()=>{
       controls.classList.add("hidden");
@@ -241,28 +221,64 @@ function showControls(){
   }
 }
 
-player.addEventListener("play",showControls);
-player.addEventListener("pause",()=>controls.classList.remove("hidden"));
+player.addEventListener("play",()=>{ updatePlayIcon(); showControls(); });
+player.addEventListener("pause",()=>{ updatePlayIcon(); controls.classList.remove("hidden"); });
 
-/* 화면 터치 = 재생/일시정지 */
-document.getElementById("container").addEventListener("click",()=>{
-  if(!started) return;
-  player.paused ? play() : pause();
-});
-
-/* 첫 시작 */
-startScreen.addEventListener("click",()=>{
-  started=true;
-  startScreen.style.display="none";
-  play();
-
-  if(document.fullscreenElement==null){
-    document.documentElement.requestFullscreen().catch(()=>{});
+player.addEventListener("ended",()=>{
+  if(currentIndex<videos.length-1){
+    loadVideo(currentIndex+1);
+    player.play();
   }
 });
 
-/* 초기 로드 */
+progress.addEventListener("input",(e)=>{
+  e.stopPropagation();
+  if(player.duration){
+    player.currentTime=(progress.value/100)*player.duration;
+  }
+});
+
+player.addEventListener("timeupdate",()=>{
+  if(player.duration){
+    progress.value=(player.currentTime/player.duration)*100;
+  }
+});
+
+document.getElementById("prevBtn").addEventListener("click",(e)=>{
+  e.stopPropagation();
+  if(currentIndex>0){
+    loadVideo(currentIndex-1);
+    player.play();
+  }
+});
+
+document.getElementById("nextBtn").addEventListener("click",(e)=>{
+  e.stopPropagation();
+  if(currentIndex<videos.length-1){
+    loadVideo(currentIndex+1);
+    player.play();
+  }
+});
+
+playBtn.addEventListener("click",(e)=>{
+  e.stopPropagation();
+  player.paused ? player.play() : player.pause();
+});
+
+document.getElementById("container").addEventListener("click",()=>{
+  if(!started) return;
+  player.paused ? player.play() : player.pause();
+});
+
+startScreen.addEventListener("click",()=>{
+  started=true;
+  startScreen.style.display="none";
+  player.play();
+  document.documentElement.requestFullscreen().catch(()=>{});
+});
+
 loadVideo(0);
+updatePlayIcon();
 </script>
 
 </body>
