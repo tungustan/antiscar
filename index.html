@@ -2,97 +2,102 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mobile Bunny Playlist</title>
-
-<script src="https://iframe.mediadelivery.net/player.js"></script>
-
+<title>Fullscreen Bunny Player</title>
 <style>
-html, body {
-  margin:0;
-  padding:0;
-  background:black;
-  height:100%;
-  overflow:hidden;
-}
-
-#loginBox {
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  color:white;
-  text-align:center;
-}
-
-#playerSection {
-  display:none;
-  width:100vw;
-  height:100vh;
-}
-
-#player {
-  width:100%;
-  height:100%;
-}
+body { margin:0; background:black; color:white; text-align:center; font-family:Arial; }
+#loginBox { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); }
+#videoSection { display:none; }
+video { width:100%; height:100vh; object-fit:contain; background:black; }
+button { padding:12px 25px; font-size:18px; margin-top:15px; cursor:pointer; }
 </style>
 </head>
 <body>
 
 <div id="loginBox">
-  <h2>비밀번호 입력</h2>
-  <input type="password" id="pw">
-  <br>
-  <button onclick="checkPassword()">접속</button>
+<h2>비밀번호 입력</h2>
+<input type="password" id="pw">
+<br>
+<button onclick="checkPassword()">접속</button>
+<p id="error" style="color:red;"></p>
 </div>
 
-<div id="playerSection">
-  <div id="player"></div>
+<div id="videoSection">
+<button onclick="startPlayback()">▶ 재생 시작 (전체화면)</button>
+<div id="title"></div>
+<video id="player" controls></video>
 </div>
 
 <script>
 const correctPassword = "12345";
-const libraryId = 603895;
+const libraryId = "603895";
+const apiKey = "76261b03-34c8-4124-a50b3e6ef178-3abd-41f8";
+const pullZoneUrl = "https://vz-af7f48b7-cd1.b-cdn.net";
 
-// 🔥 여기다가 영상 GUID 직접 넣으세요
-const videos = [
-  "VIDEO_GUID_1",
-  "VIDEO_GUID_2",
-  "VIDEO_GUID_3"
-];
-
+let videos = [];
 let currentIndex = 0;
-let player;
+const player = document.getElementById("player");
+const titleDiv = document.getElementById("title");
 
 function checkPassword(){
   if(document.getElementById("pw").value === correctPassword){
     document.getElementById("loginBox").style.display="none";
-    document.getElementById("playerSection").style.display="block";
-    initPlayer(videos[0]);
+    document.getElementById("videoSection").style.display="block";
+    loadVideos();
+  } else {
+    document.getElementById("error").innerText="비밀번호 틀림";
   }
 }
 
-function initPlayer(videoId){
-  player = new playerjs.Player('player', {
-    file: videoId,
-    library: libraryId,
-    autoplay: true,
-    muted: false,
-    captions: false,
-    chromecast: false
-  });
-
-  player.on('ended', function(){
-    nextVideo();
-  });
-}
-
-function nextVideo(){
-  if(currentIndex + 1 < videos.length){
-    currentIndex++;
-    player.load(videos[currentIndex]);
+async function loadVideos(){
+  try{
+    const res = await fetch(`https://video.bunnycdn.com/library/${libraryId}/videos?page=1&itemsPerPage=100`,{
+      headers:{ "AccessKey": apiKey }
+    });
+    const data = await res.json();
+    videos = data.items || [];
+    videos.sort((a,b)=>(a.title||"").localeCompare(b.title||"",'ko'));
+  }catch(e){
+    alert("API 오류 (CORS 또는 키 문제)");
+    console.error(e);
   }
 }
+
+function enterFullscreen(element){
+  if(element.requestFullscreen){
+    element.requestFullscreen();
+  }else if(element.webkitRequestFullscreen){
+    element.webkitRequestFullscreen();
+  }else if(element.msRequestFullscreen){
+    element.msRequestFullscreen();
+  }
+}
+
+function startPlayback(){
+  if(!videos.length){
+    alert("영상 없음");
+    return;
+  }
+
+  enterFullscreen(document.documentElement); // 🔥 페이지 전체화면
+
+  playVideo(0);
+}
+
+function playVideo(i){
+  currentIndex=i;
+  const v=videos[i];
+  player.src=`${pullZoneUrl}/${v.guid}/play_720p.mp4`;
+  titleDiv.innerText=v.title;
+  player.play();
+}
+
+player.addEventListener("ended",()=>{
+  if(currentIndex+1 < videos.length){
+    playVideo(currentIndex+1);
+  }else{
+    titleDiv.innerText="모든 영상 재생 완료";
+  }
+});
 </script>
 
 </body>
