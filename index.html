@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="theme-color" content="#000000">
 <title>Player</title>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
 <style>
 html,body{
@@ -16,7 +16,6 @@ html,body{
   height:100%;
   overflow:hidden;
   font-family:-apple-system,BlinkMacSystemFont,Arial;
-  color:white;
 }
 
 #container{
@@ -31,141 +30,13 @@ video{
   object-fit:contain;
   background:black;
 }
-
-/* 시작 화면 */
-.start-screen{
-  position:absolute;
-  inset:0;
-  background:black;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  z-index:5;
-  cursor:pointer;
-}
-
-.start-screen svg{
-  width:90px;
-  height:90px;
-  fill:white;
-}
-
-/* 상단 */
-.top-bar{
-  position:absolute;
-  top:0;
-  width:100%;
-  padding:24px;
-  background:linear-gradient(to bottom, rgba(0,0,0,0.85), transparent);
-  font-size:14px;
-}
-
-/* 하단 */
-.controls{
-  position:absolute;
-  bottom:0;
-  width:100%;
-  padding:30px 24px 50px;
-  background:linear-gradient(to top, rgba(0,0,0,0.85), transparent);
-  transition:opacity .3s ease;
-}
-
-.controls.hidden{
-  opacity:0;
-  pointer-events:none;
-}
-
-/* 진행바 */
-input[type=range]{
-  width:100%;
-  -webkit-appearance:none;
-  height:4px;
-  background:rgba(255,255,255,0.3);
-  margin-bottom:28px;
-}
-
-input[type=range]::-webkit-slider-thumb{
-  -webkit-appearance:none;
-  width:16px;
-  height:16px;
-  border-radius:50%;
-  background:white;
-}
-
-/* 버튼 영역 */
-.button-row{
-  display:flex;
-  justify-content:center;
-  gap:70px;
-}
-
-/* 버튼 */
-.button{
-  width:90px;
-  height:90px;
-  border-radius:50%;
-  background:rgba(255,255,255,0.08);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
-  backdrop-filter:blur(6px);
-  transition:all .2s ease;
-}
-
-.button svg{
-  width:36px;
-  height:36px;
-  fill:white;
-}
-
-.button:active{
-  transform:scale(0.9);
-  background:rgba(255,255,255,0.18);
-}
 </style>
 </head>
 
 <body>
 
 <div id="container">
-
   <video id="player" playsinline></video>
-
-  <div class="start-screen" id="startScreen">
-    <svg viewBox="0 0 24 24">
-      <polygon points="5,3 19,12 5,21"></polygon>
-    </svg>
-  </div>
-
-  <div class="top-bar">
-    <span id="videoIndex">1 / 3</span>
-  </div>
-
-  <div class="controls" id="controls">
-
-    <input type="range" id="progress" value="0" min="0" max="100">
-
-    <div class="button-row">
-      <div class="button" id="prevBtn">
-        <svg viewBox="0 0 24 24">
-          <polygon points="11,12 18,18 18,6"></polygon>
-          <polygon points="6,12 13,18 13,6"></polygon>
-        </svg>
-      </div>
-
-      <div class="button" id="playBtn"></div>
-
-      <div class="button" id="nextBtn">
-        <svg viewBox="0 0 24 24">
-          <polygon points="13,12 6,18 6,6"></polygon>
-          <polygon points="18,12 11,18 11,6"></polygon>
-        </svg>
-      </div>
-    </div>
-
-  </div>
-
 </div>
 
 <script>
@@ -178,107 +49,25 @@ const videos=[
 ];
 
 let currentIndex=0;
-let hideTimeout;
-let started=false;
-
-const player=document.getElementById("player");
-const controls=document.getElementById("controls");
-const progress=document.getElementById("progress");
-const videoIndexText=document.getElementById("videoIndex");
-const startScreen=document.getElementById("startScreen");
-const playBtn=document.getElementById("playBtn");
-
-/* 재생 아이콘 업데이트 */
-function updatePlayIcon(){
-  if(player.paused){
-    playBtn.innerHTML=`
-      <svg viewBox="0 0 24 24">
-        <polygon points="5,3 19,12 5,21"></polygon>
-      </svg>`;
-  }else{
-    playBtn.innerHTML=`
-      <svg viewBox="0 0 24 24">
-        <rect x="6" y="4" width="4" height="16"/>
-        <rect x="14" y="4" width="4" height="16"/>
-      </svg>`;
-  }
-}
+const video=document.getElementById("player");
+let hls;
 
 function loadVideo(index){
   currentIndex=index;
-  player.src=\`\${pullZoneUrl}/\${videos[currentIndex]}/playlist.m3u8\`;
-  player.load();
-  videoIndexText.textContent=(currentIndex+1)+" / "+videos.length;
-}
+  const src=`${pullZoneUrl}/${videos[currentIndex]}/playlist.m3u8`;
 
-function showControls(){
-  controls.classList.remove("hidden");
-  clearTimeout(hideTimeout);
-  if(!player.paused){
-    hideTimeout=setTimeout(()=>{
-      controls.classList.add("hidden");
-    },3000);
+  if(Hls.isSupported()){
+    if(hls) hls.destroy();
+    hls=new Hls();
+    hls.loadSource(src);
+    hls.attachMedia(video);
+  } 
+  else if(video.canPlayType("application/vnd.apple.mpegurl")){
+    video.src=src;
   }
 }
-
-player.addEventListener("play",()=>{ updatePlayIcon(); showControls(); });
-player.addEventListener("pause",()=>{ updatePlayIcon(); controls.classList.remove("hidden"); });
-
-player.addEventListener("ended",()=>{
-  if(currentIndex<videos.length-1){
-    loadVideo(currentIndex+1);
-    player.play();
-  }
-});
-
-progress.addEventListener("input",(e)=>{
-  e.stopPropagation();
-  if(player.duration){
-    player.currentTime=(progress.value/100)*player.duration;
-  }
-});
-
-player.addEventListener("timeupdate",()=>{
-  if(player.duration){
-    progress.value=(player.currentTime/player.duration)*100;
-  }
-});
-
-document.getElementById("prevBtn").addEventListener("click",(e)=>{
-  e.stopPropagation();
-  if(currentIndex>0){
-    loadVideo(currentIndex-1);
-    player.play();
-  }
-});
-
-document.getElementById("nextBtn").addEventListener("click",(e)=>{
-  e.stopPropagation();
-  if(currentIndex<videos.length-1){
-    loadVideo(currentIndex+1);
-    player.play();
-  }
-});
-
-playBtn.addEventListener("click",(e)=>{
-  e.stopPropagation();
-  player.paused ? player.play() : player.pause();
-});
-
-document.getElementById("container").addEventListener("click",()=>{
-  if(!started) return;
-  player.paused ? player.play() : player.pause();
-});
-
-startScreen.addEventListener("click",()=>{
-  started=true;
-  startScreen.style.display="none";
-  player.play();
-  document.documentElement.requestFullscreen().catch(()=>{});
-});
 
 loadVideo(0);
-updatePlayIcon();
 </script>
 
 </body>
