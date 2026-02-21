@@ -2,38 +2,38 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Mobile Bunny Auto Playlist</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mobile Bunny Playlist</title>
 
 <script src="https://iframe.mediadelivery.net/player.js"></script>
 
 <style>
 html, body {
-  margin: 0;
-  padding: 0;
-  background: black;
-  height: 100%;
-  overflow: hidden;
+  margin:0;
+  padding:0;
+  background:black;
+  height:100%;
+  overflow:hidden;
 }
 
 #loginBox {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: white;
-  text-align: center;
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  color:white;
+  text-align:center;
 }
 
 #playerSection {
-  display: none;
-  width: 100vw;
-  height: 100vh;
+  display:none;
+  width:100vw;
+  height:100vh;
 }
 
 #player {
-  width: 100%;
-  height: 100%;
+  width:100%;
+  height:100%;
 }
 </style>
 </head>
@@ -44,7 +44,6 @@ html, body {
   <input type="password" id="pw">
   <br>
   <button onclick="checkPassword()">접속</button>
-  <p id="error" style="color:red;"></p>
 </div>
 
 <div id="playerSection">
@@ -53,50 +52,28 @@ html, body {
 
 <script>
 const correctPassword = "12345";
-
 const libraryId = 603895;
-const apiKey = "76261b03-34c8-4124-a50b3e6ef178-3abd-41f8";
 
-let videos = [];
+// 🔥 여기다가 영상 GUID 직접 넣으세요
+const videos = [
+  "VIDEO_GUID_1",
+  "VIDEO_GUID_2",
+  "VIDEO_GUID_3"
+];
+
 let currentIndex = 0;
-let playerInstance;
+let player;
 
 function checkPassword(){
   if(document.getElementById("pw").value === correctPassword){
     document.getElementById("loginBox").style.display="none";
     document.getElementById("playerSection").style.display="block";
-    loadVideos();
-  } else {
-    document.getElementById("error").innerText="비밀번호 틀림";
-  }
-}
-
-async function loadVideos(){
-  try{
-    const res = await fetch(`https://video.bunnycdn.com/library/${libraryId}/videos?page=1&itemsPerPage=100`,{
-      headers:{ "AccessKey": apiKey }
-    });
-
-    const data = await res.json();
-    videos = data.items || [];
-
-    videos.sort((a,b)=>(a.title||"").localeCompare(b.title||"",'ko'));
-
-    if(videos.length){
-      initPlayer(videos[0].guid);
-    } else {
-      alert("영상이 없습니다.");
-    }
-
-  }catch(e){
-    alert("API 오류 (CORS 또는 키 문제)");
-    console.error(e);
+    initPlayer(videos[0]);
   }
 }
 
 function initPlayer(videoId){
-
-  playerInstance = new playerjs.Player('player', {
+  player = new playerjs.Player('player', {
     file: videoId,
     library: libraryId,
     autoplay: true,
@@ -105,7 +82,7 @@ function initPlayer(videoId){
     chromecast: false
   });
 
-  playerInstance.on('ended', function(){
+  player.on('ended', function(){
     nextVideo();
   });
 }
@@ -113,7 +90,7 @@ function initPlayer(videoId){
 function nextVideo(){
   if(currentIndex + 1 < videos.length){
     currentIndex++;
-    playerInstance.load(videos[currentIndex].guid);
+    player.load(videos[currentIndex]);
   }
 }
 </script>
