@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stable Fullscreen Player</title>
+<title>Minimal Player</title>
 
 <style>
 body{
   margin:0;
   background:black;
   overflow:hidden;
-  font-family:Arial;
+  font-family:-apple-system,BlinkMacSystemFont,Arial;
 }
 
-#videoContainer{
+#container{
   position:relative;
   width:100vw;
   height:100vh;
@@ -26,49 +26,76 @@ video{
   background:black;
 }
 
+/* 시작 오버레이 */
 #startOverlay{
   position:absolute;
-  width:100%;
-  height:100%;
+  inset:0;
   display:flex;
   justify-content:center;
   align-items:center;
   background:black;
   color:white;
-  font-size:22px;
+  font-size:20px;
   z-index:20;
   cursor:pointer;
 }
 
+/* 컨트롤 영역 */
 .controls{
   position:absolute;
-  bottom:25px;
-  width:100%;
-  text-align:center;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:8px 14px;
+  border-radius:30px;
+  backdrop-filter:blur(10px);
+  background:rgba(255,255,255,0.1);
+  transition:opacity .3s ease;
+}
+
+.hidden{
+  opacity:0;
+  pointer-events:none;
 }
 
 button{
-  padding:12px 18px;
-  margin:6px;
-  font-size:16px;
+  background:none;
+  border:none;
+  color:white;
+  font-size:18px;
+  padding:6px;
+}
+
+#progress{
+  width:120px;
+  accent-color:white;
+}
+
+#time{
+  font-size:12px;
+  opacity:.8;
 }
 </style>
 </head>
 <body>
 
-<div id="videoContainer">
+<div id="container">
 
   <div id="startOverlay" onclick="startPlayer()">
     Tap to Start
   </div>
 
-  <!-- 🔥 controls 제거 -->
   <video id="player" playsinline></video>
 
-  <div class="controls">
-    <button onclick="prevVideo()">⏮ Prev</button>
-    <button onclick="togglePlay()">▶ / ⏸</button>
-    <button onclick="nextVideo()">Next ⏭</button>
+  <div id="controls" class="controls">
+    <button onclick="prevVideo()">⏮</button>
+    <button onclick="togglePlay()">⏯</button>
+    <button onclick="nextVideo()">⏭</button>
+    <input type="range" id="progress" min="0" max="100" value="0">
+    <div id="time">0:00</div>
   </div>
 
 </div>
@@ -82,9 +109,14 @@ const videos = [
   "4dfa8dfd-8fb0-4221-b365-fa1d1ca91eb4"
 ];
 
-let currentIndex = 0;
-const player = document.getElementById("player");
-const overlay = document.getElementById("startOverlay");
+let currentIndex=0;
+let hideTimeout;
+
+const player=document.getElementById("player");
+const overlay=document.getElementById("startOverlay");
+const controls=document.getElementById("controls");
+const progress=document.getElementById("progress");
+const time=document.getElementById("time");
 
 function startPlayer(){
   overlay.style.display="none";
@@ -93,14 +125,14 @@ function startPlayer(){
 }
 
 function enterFullscreen(){
-  const el = document.documentElement;
+  const el=document.documentElement;
   if(el.requestFullscreen) el.requestFullscreen();
   else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
 }
 
 function playVideo(index){
-  currentIndex = index;
-  player.src = `${pullZoneUrl}/${videos[currentIndex]}/play_720p.mp4`;
+  currentIndex=index;
+  player.src=`${pullZoneUrl}/${videos[currentIndex]}/play_720p.mp4`;
   player.play().catch(()=>{});
 }
 
@@ -110,24 +142,49 @@ function togglePlay(){
 }
 
 function nextVideo(){
-  currentIndex++;
-  if(currentIndex >= videos.length){
-    currentIndex = 0;
-  }
+  currentIndex=(currentIndex+1)%videos.length;
   playVideo(currentIndex);
 }
 
 function prevVideo(){
-  currentIndex--;
-  if(currentIndex < 0){
-    currentIndex = videos.length - 1;
-  }
+  currentIndex=(currentIndex-1+videos.length)%videos.length;
   playVideo(currentIndex);
 }
+
+player.addEventListener("timeupdate",()=>{
+  const percent=(player.currentTime/player.duration)*100||0;
+  progress.value=percent;
+  time.textContent=formatTime(player.currentTime);
+});
+
+progress.addEventListener("input",(e)=>{
+  player.currentTime=(e.target.value/100)*player.duration;
+});
 
 player.addEventListener("ended",()=>{
   nextVideo();
 });
+
+function formatTime(t){
+  if(!t) return "0:00";
+  const m=Math.floor(t/60);
+  const s=Math.floor(t%60).toString().padStart(2,"0");
+  return `${m}:${s}`;
+}
+
+/* 🔥 자동 숨김 */
+function showControls(){
+  controls.classList.remove("hidden");
+  clearTimeout(hideTimeout);
+  hideTimeout=setTimeout(()=>{
+    controls.classList.add("hidden");
+  },2000);
+}
+
+document.addEventListener("mousemove",showControls);
+document.addEventListener("touchstart",showControls);
+
+showControls();
 </script>
 
 </body>
