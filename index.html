@@ -2,29 +2,69 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>Bunny Embed Playlist</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Mobile Bunny Player</title>
+
 <style>
-body { margin:0; background:black; color:white; font-family:Arial; text-align:center; }
-#loginBox { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); }
-#playerSection { display:none; height:100vh; }
-iframe { width:100%; height:100vh; border:none; }
+html, body {
+  margin: 0;
+  padding: 0;
+  background: black;
+  height: 100%;
+  overflow: hidden;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#loginBox {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  text-align: center;
+}
+
+input {
+  padding: 12px;
+  font-size: 18px;
+  width: 200px;
+}
+
+button {
+  padding: 12px 20px;
+  font-size: 18px;
+  margin-top: 10px;
+}
+
+#playerSection {
+  display: none;
+  width: 100vw;
+  height: 100vh;
+}
+
+iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
 </style>
 </head>
 <body>
 
 <div id="loginBox">
-<h2>비밀번호 입력</h2>
-<input type="password" id="pw">
-<br>
-<button onclick="checkPassword()">접속</button>
-<p id="error" style="color:red;"></p>
+  <h2 style="color:white;">비밀번호 입력</h2>
+  <input type="password" id="pw" />
+  <br>
+  <button onclick="checkPassword()">접속</button>
+  <p id="error" style="color:red;"></p>
 </div>
 
 <div id="playerSection">
-<iframe id="bunnyPlayer"
-allow="autoplay; fullscreen"
-allowfullscreen>
-</iframe>
+  <iframe id="bunnyPlayer"
+    allow="autoplay; fullscreen"
+    allowfullscreen>
+  </iframe>
 </div>
 
 <script>
@@ -42,7 +82,7 @@ function checkPassword(){
     document.getElementById("loginBox").style.display="none";
     document.getElementById("playerSection").style.display="block";
     loadVideos();
-  }else{
+  } else {
     document.getElementById("error").innerText="비밀번호 틀림";
   }
 }
@@ -52,6 +92,7 @@ async function loadVideos(){
     const res = await fetch(`https://video.bunnycdn.com/library/${libraryId}/videos?page=1&itemsPerPage=100`,{
       headers:{ "AccessKey": apiKey }
     });
+
     const data = await res.json();
     videos = data.items || [];
 
@@ -59,7 +100,7 @@ async function loadVideos(){
 
     if(videos.length){
       playVideo(0);
-    }else{
+    } else {
       alert("영상이 없습니다.");
     }
 
@@ -74,25 +115,27 @@ function playVideo(index){
 
   const videoId = videos[index].guid;
 
-  // 🔥 Bunny 기본 플레이어 사용
-  // autoplay=1 → 자동재생
-  // muted=0 → 소리 켜짐
-  // captions=0 → 자막 버튼 숨김
-  const url = `${embedBase}${videoId}?autoplay=true&muted=false&captions=false`;
+  const url =
+    `${embedBase}${videoId}` +
+    `?autoplay=true` +
+    `&muted=false` +
+    `&playsinline=true` +
+    `&captions=false` +     // 자막 버튼 숨김
+    `&chromecast=false`;    // 캐스트 버튼 숨김
 
   document.getElementById("bunnyPlayer").src = url;
 }
 
-// 다음 영상 자동 재생을 위해 5초마다 체크
-// (Bunny iframe은 ended 이벤트 직접 접근 불가)
-setInterval(()=>{
-  const iframe = document.getElementById("bunnyPlayer");
+/* 다음 영상 자동 전환 (모바일용 타이머 방식) */
+async function autoNext(){
+  if(currentIndex + 1 < videos.length){
+    playVideo(currentIndex + 1);
+  }
+}
 
-  if(!videos.length) return;
+// Bunny iframe ended 직접 감지 불가 → 간단한 대기 후 전환 방식 필요
+// 실제 정확 감지는 Bunny Player JS SDK 필요
 
-  // 영상 길이만큼 대기 후 다음 영상 로드 방식 대신
-  // 실제 서비스에서는 Bunny Player API 연동 가능
-},5000);
 </script>
 
 </body>
