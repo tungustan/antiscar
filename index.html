@@ -86,14 +86,14 @@ video{
 /* 컨트롤 */
 .controls{
   position:absolute;
-  bottom:20px; /* 🔥 화면과 박스 간격 확보 */
+  bottom:20px; /* 검색창과 간격 확보 */
   left:0;
   width:100%;
   padding:20px;
   box-sizing:border-box;
   background:linear-gradient(to top, rgba(0,0,0,.9), transparent);
   
-  /* 🔥 페이드 인/아웃 */
+  /* 페이드 인/아웃 */
   opacity:1;
   transition:opacity 0.3s ease;
 }
@@ -222,6 +222,7 @@ const controls=document.querySelector(".controls");
 
 let currentIndex=0;
 let hideTimer;
+let controlsVisible=false; // 🔹 UI 표시 여부
 
 /* 카드 생성 */
 videos.forEach((v,i)=>{
@@ -247,6 +248,7 @@ function goBack(){
   player.pause();
   document.getElementById("playerScreen").style.display="none";
   document.getElementById("archive").style.display="block";
+  controlsVisible=false;
 }
 
 /* 영상 로드 */
@@ -254,12 +256,17 @@ function loadVideo(){
   player.src=`${pullZoneUrl}/${videos[currentIndex]}/playlist.m3u8`;
 }
 
-/* 재생/정지 */
-function togglePlay(){
-  player.paused?player.play():player.pause();
-  showControls();
-}
+/* 화면 터치 이벤트 */
+player.addEventListener("click",()=>{
+  if(!controlsVisible){
+    showControls();
+    controlsVisible=true; // 컨트롤만 보여줌
+  } else {
+    togglePlay(); // UI 이미 보이면 포즈/재생
+  }
+});
 
+/* 재생/정지 버튼 */
 playBtn.onclick=togglePlay;
 
 /* -10초 / +10초 */
@@ -272,10 +279,13 @@ document.getElementById("plusBtn").onclick=()=>{
   showControls();
 };
 
-/* 화면 터치 = 재생/정지 */
-player.addEventListener("click",togglePlay);
+/* 재생/정지 */
+function togglePlay(){
+  player.paused?player.play():player.pause();
+  showControls();
+}
 
-/* 재생/정지 아이콘 전환 */
+/* 아이콘 전환 */
 player.addEventListener("play",()=>{
   playIcon.style.display="none";
   pauseIcon.style.display="block";
@@ -291,7 +301,6 @@ player.addEventListener("timeupdate",()=>{
     progress.value=(player.currentTime/player.duration)*100;
   }
 });
-
 progress.oninput=()=>{
   if(player.duration){
     player.currentTime=(progress.value/100)*player.duration;
@@ -299,7 +308,7 @@ progress.oninput=()=>{
   }
 };
 
-/* 자동 다음 */
+/* 자동 다음 영상 */
 player.addEventListener("ended",()=>{
   if(currentIndex < videos.length-1){
     currentIndex++;
@@ -309,12 +318,13 @@ player.addEventListener("ended",()=>{
   }
 });
 
-/* 🔥 컨트롤 표시 + 3초 후 페이드 아웃 */
+/* 🔹 컨트롤 표시 + 3초 후 페이드 아웃 */
 function showControls(){
   controls.classList.remove("hide");
   clearTimeout(hideTimer);
   hideTimer=setTimeout(()=>{
-    controls.classList.add("hide"); // transition으로 디졸브 처리
+    controls.classList.add("hide");
+    controlsVisible=false; // UI 사라지면 상태 초기화
   },3000);
 }
 </script>
