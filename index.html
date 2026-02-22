@@ -13,7 +13,7 @@ html, body {
   font-family:-apple-system,BlinkMacSystemFont,Arial;
 }
 
-/* 전체 앱 컨테이너 */
+/* 앱 컨테이너 */
 #app {
   position:fixed; top:0; left:0;
   width:100vw; height:100vh;
@@ -32,13 +32,16 @@ html, body {
   color:white;
   text-align:center;
 }
+
+/* 그리드 2열, 카드 가로형 */
 .grid {
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  grid-template-columns:repeat(2,1fr); /* 2열 고정 */
   gap:10px;
 }
 .card {
-  aspect-ratio:9/16; /* 세로 영상 비율에 맞춤 */
+  width:100%;
+  aspect-ratio:16/9; /* 가로형 카드 */
   border-radius:10px;
   background:#111;
   background-size:cover;
