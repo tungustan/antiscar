@@ -12,11 +12,7 @@ html, body {
   background:black;
   font-family:-apple-system,BlinkMacSystemFont,Arial;
 }
-#app {
-  position:fixed; top:0; left:0;
-  width:100vw; height:100vh;
-  background:black; overflow:hidden;
-}
+#app { position:fixed; top:0; left:0; width:100vw; height:100vh; background:black; overflow:hidden; }
 
 /* 아카이브 */
 #archive { padding:20px; }
@@ -99,7 +95,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; h
 <script>
 const pullZoneUrl="https://vz-af7f48b7-cd1.b-cdn.net";
 
-/* 영상 ID 배열 */
+/* 13개 영상 ID */
 const videos=[
 "b5f37dc2-c84b-4ada-8f63-784c3962fd22",
 "e95789df-e709-434e-be8c-fdd6969ef422",
@@ -116,12 +112,21 @@ const videos=[
 "cf1ec517-21b0-40ca-8326-5da315bd9e40"
 ];
 
-/* 썸네일 배열 (영상 순서대로) */
+/* Bunny.net Storage에 올린 썸네일 URL 13개 */
 const posters=[
-"poster1.jpg","poster2.jpg","poster3.jpg",
-"poster4.jpg","poster5.jpg","poster6.jpg",
-"poster7.jpg","poster8.jpg","poster9.jpg",
-"poster10.jpg","poster11.jpg","poster12.jpg","poster13.jpg"
+"https://yourzone.b-cdn.net/posters/1391434_1.jpg",
+"https://yourzone.b-cdn.net/posters/1391434_2.jpg",
+"https://yourzone.b-cdn.net/posters/1391434_3.jpg",
+"https://yourzone.b-cdn.net/posters/1391434_4.jpg",
+"https://yourzone.b-cdn.net/posters/1391434_5.jpg",
+"https://yourzone.b-cdn.net/posters/1391434_6.jpg",
+"https://yourzone.b-cdn.net/posters/1391434_7.jpg",
+"https://yourzone.b-cdn.net/posters/1391434_8.jpg",
+"https://yourzone.b-cdn.net/posters/1391434_9.jpg",
+"https://yourzone.b-cdn.net/posters/1391434_10.jpg",
+"https://yourzone.b-cdn.net/posters/1391434_11.jpg",
+"https://yourzone.b-cdn.net/posters/1391434_12.jpg",
+"https://yourzone.b-cdn.net/posters/1391434_13.jpg"
 ];
 
 const grid=document.getElementById("grid");
@@ -141,7 +146,7 @@ let controlsVisible=false;
 videos.forEach((v,i)=>{
   const card=document.createElement("div");
   card.className="card";
-  card.style.backgroundImage=`url(${posters[i]})`;
+  card.style.backgroundImage=`url(${posters[i]})`; // 포스터 연결
   card.onclick=()=>startVideo(i);
   grid.appendChild(card);
 });
@@ -172,10 +177,8 @@ function loadVideo(){
 
 /* 화면 터치 이벤트 */
 player.addEventListener("click",()=>{
-  if(!controlsVisible){
-    showControls();
-    controlsVisible=true;
-  } else togglePlay();
+  if(!controlsVisible){ showControls(); controlsVisible=true; }
+  else togglePlay();
 });
 
 /* 재생/정지 버튼 */
@@ -208,10 +211,7 @@ player.addEventListener("timeupdate",()=>{
   }
 });
 progress.addEventListener("input",()=>{
-  if(player.duration){
-    player.currentTime=(progress.value/100)*player.duration;
-    showControls();
-  }
+  if(player.duration){ player.currentTime=(progress.value/100)*player.duration; showControls(); }
 });
 function formatTime(sec){ const m=Math.floor(sec/60); const s=Math.floor(sec%60); return `${m}:${s<10?'0'+s:s}`; }
 
@@ -224,9 +224,7 @@ player.addEventListener("ended",()=>{
 function showControls(){
   controls.classList.remove("hide");
   clearTimeout(hideTimer);
-  hideTimer=setTimeout(()=>{
-    controls.classList.add("hide"); controlsVisible=false;
-  },3000);
+  hideTimer=setTimeout(()=>{ controls.classList.add("hide"); controlsVisible=false; },3000);
 }
 
 /* 페이지 로드 후 Safari 주소창 최소화 */
