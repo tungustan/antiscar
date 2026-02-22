@@ -13,32 +13,25 @@ html, body {
   font-family:-apple-system,BlinkMacSystemFont,Arial;
 }
 #app { position:fixed; top:0; left:0; width:100vw; height:100vh; background:black; overflow:hidden; }
-
 /* 아카이브 */
 #archive { padding:20px; }
 .archive-title { font-size:22px; margin-bottom:20px; color:white; }
 .grid { display:grid; grid-template-columns:repeat(2,1fr); gap:15px; }
 .card { aspect-ratio:16/9; border-radius:12px; background:#111; background-size:cover; background-position:center; cursor:pointer; transition:transform .2s; }
 .card:active { transform:scale(.95); }
-
 /* 플레이어 */
 #playerScreen { position:fixed; inset:0; background:black; display:none; }
 video { width:100%; height:100%; object-fit:contain; background:black; }
-
 /* 뒤로가기 */
 .back { position:absolute; top:env(safe-area-inset-top,20px); left:20px; font-size:14px; color:white; z-index:10; cursor:pointer; }
-
 /* 컨트롤 */
 .controls { position:absolute; bottom:env(safe-area-inset-bottom,20px); left:0; width:100%; padding:15px 20px 30px 20px; box-sizing:border-box; background:linear-gradient(to top, rgba(0,0,0,.9), transparent); opacity:1; transition:opacity 0.3s ease; }
 .controls.hide { opacity:0; pointer-events:none; }
-
 /* 시간 표시 */
 .time-display { color:white; font-size:12px; display:flex; justify-content:space-between; margin-bottom:5px; }
-
 /* 진행바 */
 input[type=range] { width:100%; height:3px; -webkit-appearance:none; background:rgba(255,255,255,.3); margin-bottom:15px; }
 input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:#e50914; }
-
 /* 버튼 영역 */
 .button-row { display:flex; justify-content:center; gap:50px; }
 .btn { width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,.1); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:transform .15s; }
@@ -93,10 +86,11 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; h
 </div>
 
 <script>
-const pullZoneUrl="https://vz-af7f48b7-cd1.b-cdn.net";
+// PullZone 도메인
+const pullZoneUrl = "https://vz-af7f48b7-cd1.b-cdn.net";
 
-/* 13개 영상 ID */
-const videos=[
+// 영상 ID (13개)
+const videos = [
 "b5f37dc2-c84b-4ada-8f63-784c3962fd22",
 "e95789df-e709-434e-be8c-fdd6969ef422",
 "4dfa8dfd-8fb0-4221-b365-fa1d1ca91eb4",
@@ -112,57 +106,57 @@ const videos=[
 "cf1ec517-21b0-40ca-8326-5da315bd9e40"
 ];
 
-/* Bunny.net Storage에 올린 썸네일 URL 13개 */
-const posters=[
-"https://yourzone.b-cdn.net/posters/1391434_1.jpg",
-"https://yourzone.b-cdn.net/posters/1391434_2.jpg",
-"https://yourzone.b-cdn.net/posters/1391434_3.jpg",
-"https://yourzone.b-cdn.net/posters/1391434_4.jpg",
-"https://yourzone.b-cdn.net/posters/1391434_5.jpg",
-"https://yourzone.b-cdn.net/posters/1391434_6.jpg",
-"https://yourzone.b-cdn.net/posters/1391434_7.jpg",
-"https://yourzone.b-cdn.net/posters/1391434_8.jpg",
-"https://yourzone.b-cdn.net/posters/1391434_9.jpg",
-"https://yourzone.b-cdn.net/posters/1391434_10.jpg",
-"https://yourzone.b-cdn.net/posters/1391434_11.jpg",
-"https://yourzone.b-cdn.net/posters/1391434_12.jpg",
-"https://yourzone.b-cdn.net/posters/1391434_13.jpg"
+// 썸네일 URL 13개 (주신 순서 그대로)
+const posters = [
+"https://antiscar-poster.b-cdn.net/poster01.jpeg",
+"https://antiscar-poster.b-cdn.net/poster02.jpeg",
+"https://antiscar-poster.b-cdn.net/poster03.jpeg",
+"https://antiscar-poster.b-cdn.net/poster04.jpeg",
+"https://antiscar-poster.b-cdn.net/poster05.jpeg",
+"https://antiscar-poster.b-cdn.net/poster06.jpeg",
+"https://antiscar-poster.b-cdn.net/poster07.jpeg",
+"https://antiscar-poster.b-cdn.net/poster08.jpeg",
+"https://antiscar-poster.b-cdn.net/poster09.jpeg",
+"https://antiscar-poster.b-cdn.net/poster10.jpeg",
+"https://antiscar-poster.b-cdn.net/poster11.jpeg",
+"https://antiscar-poster.b-cdn.net/poster12.jpeg",
+"https://antiscar-poster.b-cdn.net/poster13.jpeg"
 ];
 
-const grid=document.getElementById("grid");
-const player=document.getElementById("player");
-const playIcon=document.getElementById("playIcon");
-const pauseIcon=document.getElementById("pauseIcon");
-const controls=document.querySelector(".controls");
-const progress=document.getElementById("progress");
-const currentTimeEl=document.getElementById("currentTime");
-const totalTimeEl=document.getElementById("totalTime");
+// DOM
+const grid = document.getElementById("grid");
+const player = document.getElementById("player");
+const playIcon = document.getElementById("playIcon");
+const pauseIcon = document.getElementById("pauseIcon");
+const controls = document.querySelector(".controls");
+const progress = document.getElementById("progress");
+const currentTimeEl = document.getElementById("currentTime");
+const totalTimeEl = document.getElementById("totalTime");
 
-let currentIndex=0;
-let hideTimer;
-let controlsVisible=false;
+let currentIndex = 0;
+let hideTimer, controlsVisible = false;
 
-/* 카드 생성 */
+// 카드 생성
 videos.forEach((v,i)=>{
-  const card=document.createElement("div");
+  const card = document.createElement("div");
   card.className="card";
-  card.style.backgroundImage=`url(${posters[i]})`; // 포스터 연결
-  card.onclick=()=>startVideo(i);
+  card.style.backgroundImage = `url(${posters[i]})`; // 썸네일 적용
+  card.onclick = ()=>startVideo(i);
   grid.appendChild(card);
 });
 
-/* 영상 시작 */
+// 영상 시작
 function startVideo(index){
   currentIndex=index;
   document.getElementById("archive").style.display="none";
   document.getElementById("playerScreen").style.display="block";
-  loadVideo();
+  player.src = `${pullZoneUrl}/${videos[currentIndex]}/playlist.m3u8`;
   player.play();
   showControls();
   setTimeout(()=>window.scrollTo(0,1),100);
 }
 
-/* 뒤로가기 */
+// 뒤로가기
 function goBack(){
   player.pause();
   document.getElementById("playerScreen").style.display="none";
@@ -170,21 +164,14 @@ function goBack(){
   controlsVisible=false;
 }
 
-/* 영상 로드 */
-function loadVideo(){
-  player.src=`${pullZoneUrl}/${videos[currentIndex]}/playlist.m3u8`;
-}
-
-/* 화면 터치 이벤트 */
+// 화면 터치 = 컨트롤 토글
 player.addEventListener("click",()=>{
   if(!controlsVisible){ showControls(); controlsVisible=true; }
   else togglePlay();
 });
 
-/* 재생/정지 버튼 */
+// 버튼 및 진행바
 document.getElementById("playBtn").onclick=togglePlay;
-
-/* -10초 / +10초 */
 document.getElementById("minusBtn").onclick=()=>{
   player.currentTime=Math.max(0,player.currentTime-10); showControls();
 };
@@ -192,43 +179,53 @@ document.getElementById("plusBtn").onclick=()=>{
   player.currentTime=Math.min(player.duration,player.currentTime+10); showControls();
 };
 
-/* 재생/정지 */
 function togglePlay(){
   player.paused?player.play():player.pause();
   showControls();
 }
 
-/* 아이콘 전환 */
+// 아이콘 전환
 player.addEventListener("play",()=>{ playIcon.style.display="none"; pauseIcon.style.display="block"; });
 player.addEventListener("pause",()=>{ playIcon.style.display="block"; pauseIcon.style.display="none"; });
 
-/* 진행바 + 시간 표시 */
-player.addEventListener("loadedmetadata",()=>{ totalTimeEl.textContent=formatTime(player.duration); });
+// 시간 / 진행바 업데이트
+player.addEventListener("loadedmetadata",()=>{ totalTimeEl.textContent = formatTime(player.duration); });
 player.addEventListener("timeupdate",()=>{
   if(player.duration){
-    progress.value=(player.currentTime/player.duration)*100;
-    currentTimeEl.textContent=formatTime(player.currentTime);
+    progress.value = (player.currentTime/player.duration)*100;
+    currentTimeEl.textContent = formatTime(player.currentTime);
   }
 });
-progress.addEventListener("input",()=>{
-  if(player.duration){ player.currentTime=(progress.value/100)*player.duration; showControls(); }
-});
-function formatTime(sec){ const m=Math.floor(sec/60); const s=Math.floor(sec%60); return `${m}:${s<10?'0'+s:s}`; }
+progress.oninput=()=>{
+  if(player.duration){
+    player.currentTime=(progress.value/100)*player.duration;
+    showControls();
+  }
+};
 
-/* 자동 다음 영상 */
+function formatTime(sec){
+  const m = Math.floor(sec/60), s = Math.floor(sec%60);
+  return `${m}:${s<10?'0'+s:s}`;
+}
+
+// 자동 다음
 player.addEventListener("ended",()=>{
-  if(currentIndex < videos.length-1){ currentIndex++; loadVideo(); player.play(); showControls(); }
+  if(currentIndex < videos.length-1){
+    currentIndex++;
+    startVideo(currentIndex);
+  }
 });
 
-/* 컨트롤 표시 + 3초 후 페이드 아웃 */
+// 컨트롤 표시/숨김
 function showControls(){
   controls.classList.remove("hide");
   clearTimeout(hideTimer);
   hideTimer=setTimeout(()=>{ controls.classList.add("hide"); controlsVisible=false; },3000);
 }
 
-/* 페이지 로드 후 Safari 주소창 최소화 */
+// iOS Safari 주소창 트릭
 window.addEventListener('load', ()=>{ setTimeout(()=>window.scrollTo(0,1),100); });
+
 </script>
 </body>
 </html>
