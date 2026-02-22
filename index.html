@@ -3,8 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Archive Player</title>
 
 <style>
@@ -12,20 +10,21 @@ html, body {
   margin:0;
   padding:0;
   height:100vh;
-  overflow:hidden; /* 스크롤 제거 */
+  overflow:hidden; /* 스크롤 방지 */
   background:black;
   font-family:-apple-system,BlinkMacSystemFont,Arial;
 }
 
 #app {
-  position:absolute;
+  position:fixed;
   top:0; left:0;
-  width:100vw; height:100vh;
+  width:100vw;
+  height:100vh;
   background:black;
   overflow:hidden;
 }
 
-/* ===== 아카이브 ===== */
+/* 아카이브 */
 #archive {
   padding:20px;
 }
@@ -52,11 +51,9 @@ html, body {
   transition:transform .2s;
 }
 
-.card:active {
-  transform:scale(.95);
-}
+.card:active { transform:scale(.95); }
 
-/* ===== 플레이어 ===== */
+/* 플레이어 */
 #playerScreen {
   position:fixed;
   inset:0;
@@ -95,19 +92,14 @@ video {
   transition:opacity 0.3s ease;
 }
 
-.controls.hide {
-  opacity:0;
-  pointer-events:none;
-}
+.controls.hide { opacity:0; pointer-events:none; }
 
-/* 버튼 영역 */
 .button-row {
   display:flex;
   justify-content:center;
   gap:50px;
 }
 
-/* 버튼 공통 */
 .btn {
   width:64px;
   height:64px;
@@ -120,9 +112,7 @@ video {
   transition:transform .15s;
 }
 
-.btn:active {
-  transform:scale(.9);
-}
+.btn:active { transform:scale(.9); }
 
 .btn svg {
   width:26px;
@@ -216,7 +206,7 @@ function startVideo(index){
   loadVideo();
   player.play();
   showControls();
-  // iOS 주소창 최소화
+  // Safari 주소창 최소화 트릭
   setTimeout(()=>window.scrollTo(0,1),100);
 }
 
@@ -291,6 +281,11 @@ function showControls(){
     controlsVisible=false;
   },3000);
 }
+
+// 페이지 로드 후 주소창 최소화
+window.addEventListener('load', ()=>{
+  setTimeout(()=>window.scrollTo(0,1),100);
+});
 </script>
 
 </body>
