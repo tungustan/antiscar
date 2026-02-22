@@ -2,48 +2,47 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Archive Player</title>
 
 <style>
-html,body{
+html, body {
   margin:0;
   padding:0;
+  height:100vh;
+  overflow:hidden; /* 스크롤 제거 */
   background:black;
   font-family:-apple-system,BlinkMacSystemFont,Arial;
-  overflow-x:hidden;
 }
 
-/* 중앙 고정 */
-#app{
-  width:100vw;
-  max-width:500px;
-  position:relative;
-  left:50%;
-  transform:translateX(-50%);
-  min-height:100vh;
+#app {
+  position:absolute;
+  top:0; left:0;
+  width:100vw; height:100vh;
   background:black;
   overflow:hidden;
 }
 
 /* ===== 아카이브 ===== */
-#archive{
+#archive {
   padding:20px;
 }
 
-.archive-title{
+.archive-title {
   font-size:22px;
   margin-bottom:20px;
   color:white;
 }
 
-.grid{
+.grid {
   display:grid;
   grid-template-columns:repeat(2,1fr);
   gap:15px;
 }
 
-.card{
+.card {
   aspect-ratio:16/9;
   border-radius:12px;
   background:#111;
@@ -53,19 +52,19 @@ html,body{
   transition:transform .2s;
 }
 
-.card:active{
+.card:active {
   transform:scale(.95);
 }
 
 /* ===== 플레이어 ===== */
-#playerScreen{
+#playerScreen {
   position:fixed;
   inset:0;
   background:black;
   display:none;
 }
 
-video{
+video {
   width:100%;
   height:100%;
   object-fit:contain;
@@ -73,9 +72,9 @@ video{
 }
 
 /* 뒤로가기 */
-.back{
+.back {
   position:absolute;
-  top:20px;
+  top:env(safe-area-inset-top,20px);
   left:20px;
   font-size:14px;
   color:white;
@@ -84,51 +83,32 @@ video{
 }
 
 /* 컨트롤 */
-.controls{
+.controls {
   position:absolute;
-  bottom:20px; /* 검색창과 간격 확보 */
+  bottom:env(safe-area-inset-bottom,20px);
   left:0;
   width:100%;
   padding:20px;
   box-sizing:border-box;
   background:linear-gradient(to top, rgba(0,0,0,.9), transparent);
-  
-  /* 페이드 인/아웃 */
   opacity:1;
   transition:opacity 0.3s ease;
 }
 
-.controls.hide{
+.controls.hide {
   opacity:0;
   pointer-events:none;
 }
 
-/* 진행바 */
-input[type=range]{
-  width:100%;
-  height:3px;
-  -webkit-appearance:none;
-  background:rgba(255,255,255,.3);
-  margin-bottom:20px;
-}
-
-input[type=range]::-webkit-slider-thumb{
-  -webkit-appearance:none;
-  width:14px;
-  height:14px;
-  border-radius:50%;
-  background:#e50914;
-}
-
 /* 버튼 영역 */
-.button-row{
+.button-row {
   display:flex;
   justify-content:center;
   gap:50px;
 }
 
 /* 버튼 공통 */
-.btn{
+.btn {
   width:64px;
   height:64px;
   border-radius:50%;
@@ -140,11 +120,11 @@ input[type=range]::-webkit-slider-thumb{
   transition:transform .15s;
 }
 
-.btn:active{
+.btn:active {
   transform:scale(.9);
 }
 
-.btn svg{
+.btn svg {
   width:26px;
   height:26px;
   fill:white;
@@ -155,47 +135,43 @@ input[type=range]::-webkit-slider-thumb{
 <body>
 
 <div id="app">
+  <div id="archive">
+    <div class="archive-title">Archive</div>
+    <div class="grid" id="grid"></div>
+  </div>
 
-<div id="archive">
-  <div class="archive-title">Archive</div>
-  <div class="grid" id="grid"></div>
-</div>
+  <div id="playerScreen">
+    <div class="back" onclick="goBack()">← Back</div>
+    <video id="player" playsinline></video>
 
-<div id="playerScreen">
-  <div class="back" onclick="goBack()">← Back</div>
-  <video id="player" playsinline></video>
+    <div class="controls">
+      <div class="button-row">
+        <div id="minusBtn" class="btn">
+          <svg viewBox="0 0 24 24">
+            <path d="M11 18V6l-8.5 6L11 18z"/>
+            <rect x="13" y="6" width="2" height="12"/>
+          </svg>
+        </div>
 
-  <div class="controls">
-    <input type="range" id="progress" value="0" min="0" max="100">
+        <div id="playBtn" class="btn">
+          <svg id="playIcon" viewBox="0 0 24 24">
+            <polygon points="8,5 19,12 8,19"/>
+          </svg>
+          <svg id="pauseIcon" viewBox="0 0 24 24" style="display:none">
+            <rect x="6" y="5" width="4" height="14"/>
+            <rect x="14" y="5" width="4" height="14"/>
+          </svg>
+        </div>
 
-    <div class="button-row">
-      <div id="minusBtn" class="btn">
-        <svg viewBox="0 0 24 24">
-          <path d="M11 18V6l-8.5 6L11 18z"/>
-          <rect x="13" y="6" width="2" height="12"/>
-        </svg>
-      </div>
-
-      <div id="playBtn" class="btn">
-        <svg id="playIcon" viewBox="0 0 24 24">
-          <polygon points="8,5 19,12 8,19"/>
-        </svg>
-        <svg id="pauseIcon" viewBox="0 0 24 24" style="display:none">
-          <rect x="6" y="5" width="4" height="14"/>
-          <rect x="14" y="5" width="4" height="14"/>
-        </svg>
-      </div>
-
-      <div id="plusBtn" class="btn">
-        <svg viewBox="0 0 24 24">
-          <path d="M13 6v12l8.5-6L13 6z"/>
-          <rect x="9" y="6" width="2" height="12"/>
-        </svg>
+        <div id="plusBtn" class="btn">
+          <svg viewBox="0 0 24 24">
+            <path d="M13 6v12l8.5-6L13 6z"/>
+            <rect x="9" y="6" width="2" height="12"/>
+          </svg>
+        </div>
       </div>
     </div>
   </div>
-</div>
-
 </div>
 
 <script>
@@ -215,14 +191,13 @@ const posters=[
 
 const grid=document.getElementById("grid");
 const player=document.getElementById("player");
-const progress=document.getElementById("progress");
 const playIcon=document.getElementById("playIcon");
 const pauseIcon=document.getElementById("pauseIcon");
 const controls=document.querySelector(".controls");
 
 let currentIndex=0;
 let hideTimer;
-let controlsVisible=false; // 🔹 UI 표시 여부
+let controlsVisible=false;
 
 /* 카드 생성 */
 videos.forEach((v,i)=>{
@@ -241,6 +216,8 @@ function startVideo(index){
   loadVideo();
   player.play();
   showControls();
+  // iOS 주소창 최소화
+  setTimeout(()=>window.scrollTo(0,1),100);
 }
 
 /* 뒤로가기 */
@@ -260,14 +237,14 @@ function loadVideo(){
 player.addEventListener("click",()=>{
   if(!controlsVisible){
     showControls();
-    controlsVisible=true; // 컨트롤만 보여줌
+    controlsVisible=true;
   } else {
-    togglePlay(); // UI 이미 보이면 포즈/재생
+    togglePlay();
   }
 });
 
 /* 재생/정지 버튼 */
-playBtn.onclick=togglePlay;
+document.getElementById("playBtn").onclick=togglePlay;
 
 /* -10초 / +10초 */
 document.getElementById("minusBtn").onclick=()=>{
@@ -295,19 +272,6 @@ player.addEventListener("pause",()=>{
   pauseIcon.style.display="none";
 });
 
-/* 진행바 */
-player.addEventListener("timeupdate",()=>{
-  if(player.duration){
-    progress.value=(player.currentTime/player.duration)*100;
-  }
-});
-progress.oninput=()=>{
-  if(player.duration){
-    player.currentTime=(progress.value/100)*player.duration;
-    showControls();
-  }
-};
-
 /* 자동 다음 영상 */
 player.addEventListener("ended",()=>{
   if(currentIndex < videos.length-1){
@@ -318,13 +282,13 @@ player.addEventListener("ended",()=>{
   }
 });
 
-/* 🔹 컨트롤 표시 + 3초 후 페이드 아웃 */
+/* 컨트롤 표시 + 3초 후 페이드 아웃 */
 function showControls(){
   controls.classList.remove("hide");
   clearTimeout(hideTimer);
   hideTimer=setTimeout(()=>{
     controls.classList.add("hide");
-    controlsVisible=false; // UI 사라지면 상태 초기화
+    controlsVisible=false;
   },3000);
 }
 </script>
