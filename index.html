@@ -7,140 +7,46 @@
 
 <style>
 html, body {
-  margin:0;
-  padding:0;
-  height:100vh;
-  overflow:hidden;
+  margin:0; padding:0;
+  height:100vh; overflow:hidden;
   background:black;
   font-family:-apple-system,BlinkMacSystemFont,Arial;
 }
-
 #app {
-  position:fixed;
-  top:0; left:0;
-  width:100vw;
-  height:100vh;
-  background:black;
-  overflow:hidden;
+  position:fixed; top:0; left:0;
+  width:100vw; height:100vh;
+  background:black; overflow:hidden;
 }
 
-/* ===== 아카이브 ===== */
-#archive {
-  padding:20px;
-}
-
-.archive-title {
-  font-size:22px;
-  margin-bottom:20px;
-  color:white;
-}
-
-.grid {
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:15px;
-}
-
-.card {
-  aspect-ratio:16/9;
-  border-radius:12px;
-  background:#111;
-  background-size:cover;
-  background-position:center;
-  cursor:pointer;
-  transition:transform .2s;
-}
-
+/* 아카이브 */
+#archive { padding:20px; }
+.archive-title { font-size:22px; margin-bottom:20px; color:white; }
+.grid { display:grid; grid-template-columns:repeat(2,1fr); gap:15px; }
+.card { aspect-ratio:16/9; border-radius:12px; background:#111; background-size:cover; background-position:center; cursor:pointer; transition:transform .2s; }
 .card:active { transform:scale(.95); }
 
-/* ===== 플레이어 ===== */
-#playerScreen {
-  position:fixed;
-  inset:0;
-  background:black;
-  display:none;
-}
-
-video {
-  width:100%;
-  height:100%;
-  object-fit:contain;
-  background:black;
-}
+/* 플레이어 */
+#playerScreen { position:fixed; inset:0; background:black; display:none; }
+video { width:100%; height:100%; object-fit:contain; background:black; }
 
 /* 뒤로가기 */
-.back {
-  position:absolute;
-  top:env(safe-area-inset-top,20px);
-  left:20px;
-  font-size:14px;
-  color:white;
-  z-index:10;
-  cursor:pointer;
-}
+.back { position:absolute; top:env(safe-area-inset-top,20px); left:20px; font-size:14px; color:white; z-index:10; cursor:pointer; }
 
 /* 컨트롤 */
-.controls {
-  position:absolute;
-  bottom:env(safe-area-inset-bottom,20px);
-  left:0;
-  width:100%;
-  padding:15px 20px 30px 20px;
-  box-sizing:border-box;
-  background:linear-gradient(to top, rgba(0,0,0,.9), transparent);
-  opacity:1;
-  transition:opacity 0.3s ease;
-}
-
+.controls { position:absolute; bottom:env(safe-area-inset-bottom,20px); left:0; width:100%; padding:15px 20px 30px 20px; box-sizing:border-box; background:linear-gradient(to top, rgba(0,0,0,.9), transparent); opacity:1; transition:opacity 0.3s ease; }
 .controls.hide { opacity:0; pointer-events:none; }
 
 /* 시간 표시 */
-.time-display {
-  color:white;
-  font-size:12px;
-  display:flex;
-  justify-content:space-between;
-  margin-bottom:5px;
-}
+.time-display { color:white; font-size:12px; display:flex; justify-content:space-between; margin-bottom:5px; }
 
 /* 진행바 */
-input[type=range] {
-  width:100%;
-  height:3px;
-  -webkit-appearance:none;
-  background:rgba(255,255,255,.3);
-  margin-bottom:15px;
-}
-
-input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance:none;
-  width:14px;
-  height:14px;
-  border-radius:50%;
-  background:#e50914;
-}
+input[type=range] { width:100%; height:3px; -webkit-appearance:none; background:rgba(255,255,255,.3); margin-bottom:15px; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:#e50914; }
 
 /* 버튼 영역 */
-.button-row {
-  display:flex;
-  justify-content:center;
-  gap:50px;
-}
-
-.btn {
-  width:64px;
-  height:64px;
-  border-radius:50%;
-  background:rgba(255,255,255,.1);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
-  transition:transform .15s;
-}
-
+.button-row { display:flex; justify-content:center; gap:50px; }
+.btn { width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,.1); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:transform .15s; }
 .btn:active { transform:scale(.9); }
-
 .btn svg { width:26px; height:26px; fill:white; }
 </style>
 </head>
@@ -193,6 +99,7 @@ input[type=range]::-webkit-slider-thumb {
 <script>
 const pullZoneUrl="https://vz-af7f48b7-cd1.b-cdn.net";
 
+/* 영상 ID 배열 */
 const videos=[
 "b5f37dc2-c84b-4ada-8f63-784c3962fd22",
 "e95789df-e709-434e-be8c-fdd6969ef422",
@@ -209,7 +116,13 @@ const videos=[
 "cf1ec517-21b0-40ca-8326-5da315bd9e40"
 ];
 
-const posters=["poster1.jpg","poster2.jpg","poster3.jpg"];
+/* 썸네일 배열 (영상 순서대로) */
+const posters=[
+"poster1.jpg","poster2.jpg","poster3.jpg",
+"poster4.jpg","poster5.jpg","poster6.jpg",
+"poster7.jpg","poster8.jpg","poster9.jpg",
+"poster10.jpg","poster11.jpg","poster12.jpg","poster13.jpg"
+];
 
 const grid=document.getElementById("grid");
 const player=document.getElementById("player");
@@ -241,7 +154,7 @@ function startVideo(index){
   loadVideo();
   player.play();
   showControls();
-  setTimeout(()=>window.scrollTo(0,1),100); // Safari 주소창 최소화
+  setTimeout(()=>window.scrollTo(0,1),100);
 }
 
 /* 뒤로가기 */
@@ -262,9 +175,7 @@ player.addEventListener("click",()=>{
   if(!controlsVisible){
     showControls();
     controlsVisible=true;
-  } else {
-    togglePlay();
-  }
+  } else togglePlay();
 });
 
 /* 재생/정지 버튼 */
@@ -272,12 +183,10 @@ document.getElementById("playBtn").onclick=togglePlay;
 
 /* -10초 / +10초 */
 document.getElementById("minusBtn").onclick=()=>{
-  player.currentTime=Math.max(0,player.currentTime-10);
-  showControls();
+  player.currentTime=Math.max(0,player.currentTime-10); showControls();
 };
 document.getElementById("plusBtn").onclick=()=>{
-  player.currentTime=Math.min(player.duration,player.currentTime+10);
-  showControls();
+  player.currentTime=Math.min(player.duration,player.currentTime+10); showControls();
 };
 
 /* 재생/정지 */
@@ -287,19 +196,11 @@ function togglePlay(){
 }
 
 /* 아이콘 전환 */
-player.addEventListener("play",()=>{
-  playIcon.style.display="none";
-  pauseIcon.style.display="block";
-});
-player.addEventListener("pause",()=>{
-  playIcon.style.display="block";
-  pauseIcon.style.display="none";
-});
+player.addEventListener("play",()=>{ playIcon.style.display="none"; pauseIcon.style.display="block"; });
+player.addEventListener("pause",()=>{ playIcon.style.display="block"; pauseIcon.style.display="none"; });
 
 /* 진행바 + 시간 표시 */
-player.addEventListener("loadedmetadata",()=>{
-  totalTimeEl.textContent=formatTime(player.duration);
-});
+player.addEventListener("loadedmetadata",()=>{ totalTimeEl.textContent=formatTime(player.duration); });
 player.addEventListener("timeupdate",()=>{
   if(player.duration){
     progress.value=(player.currentTime/player.duration)*100;
@@ -312,20 +213,11 @@ progress.addEventListener("input",()=>{
     showControls();
   }
 });
-function formatTime(sec){
-  const m=Math.floor(sec/60);
-  const s=Math.floor(sec%60);
-  return `${m}:${s<10?'0'+s:s}`;
-}
+function formatTime(sec){ const m=Math.floor(sec/60); const s=Math.floor(sec%60); return `${m}:${s<10?'0'+s:s}`; }
 
 /* 자동 다음 영상 */
 player.addEventListener("ended",()=>{
-  if(currentIndex < videos.length-1){
-    currentIndex++;
-    loadVideo();
-    player.play();
-    showControls();
-  }
+  if(currentIndex < videos.length-1){ currentIndex++; loadVideo(); player.play(); showControls(); }
 });
 
 /* 컨트롤 표시 + 3초 후 페이드 아웃 */
@@ -333,15 +225,12 @@ function showControls(){
   controls.classList.remove("hide");
   clearTimeout(hideTimer);
   hideTimer=setTimeout(()=>{
-    controls.classList.add("hide");
-    controlsVisible=false;
+    controls.classList.add("hide"); controlsVisible=false;
   },3000);
 }
 
-// 페이지 로드 후 Safari 주소창 최소화
-window.addEventListener('load', ()=>{
-  setTimeout(()=>window.scrollTo(0,1),100);
-});
+/* 페이지 로드 후 Safari 주소창 최소화 */
+window.addEventListener('load', ()=>{ setTimeout(()=>window.scrollTo(0,1),100); });
 </script>
 </body>
 </html>
